@@ -36,7 +36,7 @@ class RoundedButton(tk.Button):
         px,py=self.padding
         content=self.content_image
         icon=self.prefix_icon
-        text_width=font.measure(self.cget('text'))+2*(icon.width+4) if icon else font.measure(self.cget('text'))
+        text_width=font.measure(self.cget('text'))
         width=self.fixed_width or (content.width if content else text_width)+2*px
         height=max(content.height if content else font.metrics('linespace'),icon.height if icon else 0)+2*py
         color=self.fill
