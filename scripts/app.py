@@ -33,23 +33,6 @@ TASK_NAMES=('Codex Quota Resume Watcher','Codex Quota Resume Backup')
 STAR_PROMPT_TEXT='如果 Codex 自动续跑帮到了你，请在 GitHub 点个 Star，这对我们意义重大 👉'
 
 
-def claim_star_prompt(version, day=None):
-    """Reserve one marquee pass per local day, up to ten per version."""
-    day=day or datetime.now().date().isoformat()
-    path=w.APP_DIR/'star-prompt.json'
-    with w.state_lock():
-        try:data=json.loads(path.read_text(encoding='utf-8'))
-        except (OSError,json.JSONDecodeError):data={}
-        days=data.get('days',[]) if isinstance(data,dict) and data.get('version')==version else []
-        if not isinstance(days,list):days=[]
-        if day in days or len(days)>=10:return False
-        with tempfile.NamedTemporaryFile('w',encoding='utf-8',dir=w.APP_DIR,delete=False) as stream:
-            json.dump({'version':version,'days':days+[day]},stream,ensure_ascii=False)
-            temporary=Path(stream.name)
-        temporary.replace(path)
-    return True
-
-
 def run_command(command):
     result = subprocess.run(command,
                             capture_output=True,text=True,encoding='utf-8',errors='replace',
@@ -217,15 +200,11 @@ def show():
     star_button.pack(side='right')
     show_star_state()
     prompt_canvas=tk.Canvas(footer,height=28,bg='#181818',highlightthickness=0,bd=0)
-    prompt_day=[None]
-    def maybe_show_star_prompt():
-        day=datetime.now().date().isoformat()
-        if prompt_day[0]==day:return
-        prompt_day[0]=day
-        try:
-            if not claim_star_prompt(updater.VERSION,day):return
-        except OSError:return
+    prompt_after=[None]
+    def show_star_prompt():
+        if prompt_after[0]:root.after_cancel(prompt_after[0])
         prompt_canvas.pack(side='left',fill='x',expand=True,padx=(5,5))
+        prompt_canvas.delete('all')
         def start_scroll():
             item=prompt_canvas.create_text(prompt_canvas.winfo_width(),14,anchor='w',
                                            text=STAR_PROMPT_TEXT,fill='#3b90ff',font=(FONT_FAMILY,9))
@@ -238,6 +217,8 @@ def show():
                 else:root.after(40,scroll)
             scroll()
         root.after_idle(start_scroll)
+        prompt_after[0]=root.after(300000,prompt_canvas.pack_forget)
+    root.bind('<Button-1>',lambda event:show_star_prompt(),add='+')
     def button(parent,text,command,blue=False):
         b=RoundedButton(parent,text=text,command=command,bg='#2d6acb' if blue else '#2b2b2b',font=(FONT_FAMILY,10),padx=10)
         b.pack(side='left',padx=(0,6));return b
@@ -322,7 +303,6 @@ def show():
            'followup-missing-image':'图片丢失，请重新添加',
            'followup-missing-file':'附件丢失，请重新添加'}
     def tick():
-        maybe_show_star_prompt()
         w.APP_DIR.mkdir(parents=True,exist_ok=True)
         (w.APP_DIR/'ui-heartbeat').touch()
         refresh_pending()

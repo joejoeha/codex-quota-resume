@@ -25,11 +25,3 @@ for states,expected in [(('true','true'),True),(('false','false'),False),(('true
 with patch.object(app,'run_command',side_effect=RuntimeError('unavailable')):
  assert app.monitor_indicator()[2] is False
 print('MONITOR_INDICATOR_OK: green only when both real tasks are enabled; paused, partial and unknown stay non-green')
-
-with tempfile.TemporaryDirectory() as folder,patch.object(app.w,'APP_DIR',Path(folder)):
- for day in range(1,11):
-  assert app.claim_star_prompt('3.0.0-beta.39',f'2026-09-{day:02d}')
-  assert not app.claim_star_prompt('3.0.0-beta.39',f'2026-09-{day:02d}')
- assert not app.claim_star_prompt('3.0.0-beta.39','2026-09-11')
- assert app.claim_star_prompt('3.0.0-beta.40','2026-09-11')
-print('STAR_PROMPT_OK: once per day, ten times per version, resets after update')
