@@ -45,6 +45,7 @@ deferred = gh.prompted_at(100)
 assert not gh.reminder_due(deferred, 100 + gh.SEVEN_DAYS - 1)
 assert gh.reminder_due(deferred, 100 + gh.SEVEN_DAYS)
 assert not gh.reminder_due({'verified': True}, 100 + gh.SEVEN_DAYS)
+assert not gh.reminder_due({'opened_repo_at': 100}, 100 + gh.SEVEN_DAYS)
 
 with tempfile.TemporaryDirectory() as directory:
     with patch.object(w, 'APP_DIR', Path(directory)), patch.object(w, 'STATE_PATH', Path(directory)/'state.json'):

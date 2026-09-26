@@ -12,15 +12,17 @@ with tempfile.TemporaryDirectory() as directory:
     with patch.object(w, 'APP_DIR', Path(directory)), patch.object(w, 'STATE_PATH', Path(directory)/'state.json'):
         root = tk.Tk()
         root.withdraw()
-        with patch.object(gh, 'client_id', return_value=''), patch.object(gh, 'star_count', return_value=7), patch.object(star_ui.webbrowser, 'open') as opened:
+        with patch.object(gh, 'client_id', return_value=''), patch.object(gh, 'star_count', return_value=7), patch.object(gh, 'authorize_device') as authorize, patch.object(star_ui.webbrowser, 'open', return_value=True) as opened:
             panel = star_ui.show_about(root, w)
             row = next(child for child in panel.winfo_children() if isinstance(child, tk.Frame))
             star = next(child for child in row.winfo_children() if isinstance(child, tk.Button) and child.cget('text') == '⭐ Star')
             star.invoke()
             root.update()
             assert opened.call_args.args == (gh.REPO_URL,)
+            assert not authorize.called
             assert star.cget('text') == '⭐ Star'
             assert not w.load_state().get('githubStar', {}).get('verified')
+            assert w.load_state()['githubStar']['opened_repo_at'] > 0
             panel.destroy()
             panel = star_ui.show_about(root, w, reminder=True)
             later = next(child for child in panel.winfo_children() if isinstance(child, tk.Button) and child.cget('text') == '以后提醒我')
@@ -31,7 +33,8 @@ with tempfile.TemporaryDirectory() as directory:
             panel = star_ui.show_about(root, w)
             row = next(child for child in panel.winfo_children() if isinstance(child, tk.Frame))
             star = next(child for child in row.winfo_children() if isinstance(child, tk.Button) and child.cget('text') == '⭐ Star')
-            star.invoke()
+            verify = next(child for child in panel.winfo_children() if isinstance(child, tk.Button) and child.cget('text').startswith('验证 Star 状态'))
+            verify.invoke()
             root.update()  # The OAuth worker is waiting, but Tk still responds.
             assert star.cget('text') == '⭐ Star'
             blocker.set()
@@ -44,4 +47,4 @@ with tempfile.TemporaryDirectory() as directory:
             panel.destroy()
         root.destroy()
 
-print('STAR_UI_OK: About button, public count, no-client fallback, responsive worker, cached verified state')
+print('STAR_UI_OK: direct Star link, public count, optional verification, responsive worker, cached verified state')

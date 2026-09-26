@@ -107,7 +107,7 @@ def authorize_device(client, show_code, cancelled=lambda: False):
 
 
 def reminder_due(star, now):
-    return not star.get('verified') and now >= star.get('next_prompt_at', 0)
+    return not star.get('verified') and not star.get('opened_repo_at') and now >= star.get('next_prompt_at', 0)
 
 
 def prompted_at(now):

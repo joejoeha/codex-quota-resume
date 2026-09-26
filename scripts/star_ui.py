@@ -9,7 +9,7 @@ import github_star as gh
 from window_ui import FONT_FAMILY, RoundedButton
 
 
-def show_about(parent, watcher, reminder=False, auto_star=False, on_verified=None):
+def show_about(parent, watcher, reminder=False, on_verified=None):
     panel = tk.Toplevel(parent)
     panel.title('关于 Codex Quota Resume')
     panel.configure(bg='#181818')
@@ -41,21 +41,17 @@ def show_about(parent, watcher, reminder=False, auto_star=False, on_verified=Non
         widget.pack(side='left', padx=(0, 8))
         return widget
 
-    button('GitHub', lambda: webbrowser.open(gh.REPO_URL))
+    def open_star_page():
+        if webbrowser.open(gh.REPO_URL):
+            watcher.update_github_star({'opened_repo_at': time.time()})
+            status.configure(text='已打开项目页，请在 GitHub 点击 Star。')
 
-    def fallback():
-        status.configure(text='请在 GitHub 页面点击 Star。')
-        webbrowser.open(gh.REPO_URL)
-
-    def start_star(force=False):
-        if verified[0] and not force:
-            webbrowser.open(gh.REPO_URL)
-            return
+    def start_star():
         if working[0]:
             return
         client = gh.client_id()
         if not client:
-            fallback()
+            open_star_page()
             return
         working[0] = True
         status.configure(text='正在连接 GitHub…')
@@ -80,7 +76,7 @@ def show_about(parent, watcher, reminder=False, auto_star=False, on_verified=Non
 
         threading.Thread(target=work, daemon=True).start()
 
-    star_button = button('⭐ Starred' if verified[0] else '⭐ Star', lambda: start_star(), True)
+    star_button = button('⭐ Starred' if verified[0] else '⭐ Star', open_star_page, True)
     if verified[0]:
         star_button.configure(bg='#21854d')
     count = tk.Label(row, text='⭐ …', bg='#181818', fg='#aaaaaa', font=(FONT_FAMILY, 10))
@@ -94,9 +90,8 @@ def show_about(parent, watcher, reminder=False, auto_star=False, on_verified=Non
         later_button = RoundedButton(panel, text='以后提醒我', command=later,
                                      font=(FONT_FAMILY, 9), padx=10, pady=6)
         later_button.pack(anchor='w', padx=20, pady=(12, 0))
-    elif verified[0]:
-        tk.Button(panel, text='重新验证', command=lambda: start_star(True),
-                  bg='#181818', fg='#aaaaaa', bd=0, cursor='hand2').pack(anchor='w', padx=20, pady=(12, 0))
+    tk.Button(panel, text='验证 Star 状态（需 GitHub 授权）', command=start_star,
+              bg='#181818', fg='#aaaaaa', bd=0, cursor='hand2').pack(anchor='w', padx=20, pady=(12, 0))
 
     def close():
         cancel.set()
@@ -136,12 +131,10 @@ def show_about(parent, watcher, reminder=False, auto_star=False, on_verified=Non
                     if on_verified:on_verified()
                 elif kind == 'fallback':
                     working[0] = False
-                    fallback()
+                    open_star_page()
         except queue.Empty:
             pass
         panel.after(200, poll)
 
     poll()
-    if auto_star:
-        panel.after(100, start_star)
     return panel
