@@ -183,6 +183,9 @@ def show():
             try:results.put(('ok',job()))
             except Exception as error:results.put(('error',str(error)))
         threading.Thread(target=work,daemon=True).start()
+    def enable_monitor():
+        enable_button.configure(text='更新监控',bg='#21854d')
+        background(install)
     def check_update():
         if busy[0]:return
         update_button.configure(text='检查中…')
@@ -226,6 +229,7 @@ def show():
     appearance_button=RoundedButton(footer,text='',fg='#f7c948',prefix_icon=theme_icon(False),command=toggle_theme,
                                      font=(FONT_FAMILY,12),padx=6,pady=3)
     appearance_button.pack(side='left')
+    appearance_button.bind('<ButtonRelease-1>',lambda event:root.focus_set(),add='+')
     star_count=[None]
     def show_star_state():
         text='\u2003\u2003Star'
@@ -272,7 +276,7 @@ def show():
     def button(parent,text,command,blue=False):
         b=RoundedButton(parent,text=text,command=command,bg='#2d6acb' if blue else '#2b2b2b',font=(FONT_FAMILY,10),padx=10)
         b.pack(side='left',padx=(0,6));return b
-    enable_button=button(actions,'启用 / 更新监控',lambda:background(install),True)
+    enable_button=button(actions,'启用 / 更新监控',enable_monitor,True)
     button(actions,'暂停监控',lambda:background(pause))
     button(actions,'打开运行记录',lambda:subprocess.Popen(['/usr/bin/open',str(w.APP_DIR)]) if sys.platform=='darwin' else os.startfile(w.APP_DIR))
     label('选择任务，填写后续需求',size=13)
