@@ -114,8 +114,6 @@ Saved follow-ups are requested in the same conversation ten seconds after the re
 
 The macOS preview can check GitHub releases and open the download page while preserving the running app and drafts. Installation remains manual.
 
-### GitHub Star integration (maintainers)
+### GitHub Star
 
-The footer Star button opens the repository directly so signed-in GitHub users can star it in the browser without a device code. The About window offers the same link and displays the public count. Opening the page never claims a verified Star and stops future automatic reminders. Users who want status confirmation can opt into “验证 Star 状态（需 GitHub 授权）” in About. A verified Star is cached in the existing local `state.json`; no GitHub token, password, or browser cookie is stored.
-
-The project's public GitHub App Client ID (`Iv23linApcpGO7QHccqh`) is included in the source, so users need no setup. Maintainers replacing the app should use homepage `https://github.com/joejoeha/codex-quota-resume`, **Starring: Read and write** account permission, **Metadata: Read-only** repository permission, and **Device Flow** with webhooks disabled. Leave the callback URL empty. Set `CODEX_QUOTA_GITHUB_CLIENT_ID` before `scripts/build_windows.ps1` to override the public Client ID in the Windows package. Never embed a Client Secret. GitHub's authorization-code + PKCE exchange currently still requires that secret, so this desktop client uses GitHub's documented Device Flow instead. See the [GitHub App token documentation](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-user-access-token-for-a-github-app). Run `python -X utf8 scripts/test_github_star.py` and `python -X utf8 scripts/test_star_ui.py` locally.
+The yellow ★ Star button in the footer opens the repository in the user's browser. The optional count comes from GitHub's public API and is hidden when unavailable. Opening the repository does not claim that the user has starred it, and the app requests no GitHub account authorization.

@@ -33,15 +33,16 @@ def loop(root,*args,**kwargs):
     def check():
         try:
             update_button=button(root,'检查更新')
-            star_button=button(root,'⭐ Star')
+            star_button=button(root,'★ Star')
             assert update_button.winfo_viewable() and star_button.winfo_viewable()
             assert update_button.fill=='#2d6acb'
+            assert star_button.cget('fg')=='#f7c948'
             assert update_button.winfo_rootx()<star_button.winfo_rootx()
             assert star_button.winfo_rooty()+star_button.winfo_height()<=root.winfo_rooty()+root.winfo_height()
-            with patch.object(app.webbrowser,'open',return_value=True) as opened,patch.object(app.w,'update_github_star') as saved:
+            assert not any(w.cget('text')=='关于' for w in walk(root) if isinstance(w,tk.Button))
+            with patch.object(app.webbrowser,'open',return_value=True) as opened:
                 star_button.invoke()
                 assert opened.call_args.args==(app.github_star.REPO_URL,)
-                assert saved.call_args.args[0]['opened_repo_at']>0
             started=time.perf_counter()
             assert root.tray.hwnd.value==window_handle(root).value
             assert len([w for w in root.winfo_children() if isinstance(w,tk.Toplevel)])==1, 'Quota event should open the composer automatically'
