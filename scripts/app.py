@@ -198,7 +198,8 @@ def show():
             if isinstance(widget,tk.Label):widget.configure(bg=background,fg=foreground)
             elif isinstance(widget,(tk.Frame,tk.Canvas)):widget.configure(bg=background)
             if isinstance(widget,RoundedButton):
-                widget.fill=button_fill;widget.configure(fg=foreground);widget.redraw()
+                button_text='#ffffff' if theme_light[0] else foreground
+                widget.fill=button_fill;widget.configure(fg=button_text,activeforeground=button_text);widget.redraw()
             for child in widget.winfo_children():apply(child)
         apply(frame)
         root.configure(bg=background)
