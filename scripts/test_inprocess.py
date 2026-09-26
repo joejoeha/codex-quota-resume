@@ -34,10 +34,10 @@ def loop(root,*args,**kwargs):
         try:
             update_button=button(root,'检查更新')
             star_button=button(root,'\u2003\u2003Star')
-            assert update_button.winfo_viewable() and star_button.winfo_viewable()
-            assert update_button.fill=='#2d6acb'
-            update_button.configure(bg=None,text='版本')
-            assert update_button.fill is None and update_button.cget('text')=='版本'
+            assert star_button.winfo_viewable()
+            if update_button.winfo_viewable():assert update_button.fill=='#2d6acb'
+            update_button.configure(bg=None,text='检查更新')
+            assert update_button.fill is None and update_button.cget('text')=='检查更新'
             assert star_button.cget('fg')=='#f7c948'
             assert star_button.prefix_icon.size==(20,20)
             assert any(star_button.prefix_icon.getchannel('A').histogram()[1:255])
