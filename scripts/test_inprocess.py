@@ -40,6 +40,7 @@ def loop(root,*args,**kwargs):
             assert update_button.fill is None and update_button.cget('text')=='v'+app.updater.VERSION
             assert star_button.cget('fg')=='#f7c948'
             assert star_button.prefix_icon.size==(20,20)
+            assert any(star_button.prefix_icon.getchannel('A').histogram()[1:255])
             assert star_button.winfo_width()<=80
             assert update_button.winfo_rootx()<star_button.winfo_rootx()
             assert star_button.winfo_rooty()+star_button.winfo_height()<=root.winfo_rooty()+root.winfo_height()
