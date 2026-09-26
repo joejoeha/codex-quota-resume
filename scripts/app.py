@@ -181,12 +181,15 @@ def show():
     update_button.pack(side='left')
     star_count=[None]
     def show_star_state():
-        text='★ Star'
+        text='Star'
         if star_count[0] is not None:text+=f'  {star_count[0]}'
         star_button.configure(text=text)
     def open_star_page():
         webbrowser.open(github_star.REPO_URL)
-    star_button=RoundedButton(footer,text='★ Star',fg='#f7c948',
+    star_icon=Image.new('RGBA',(20,20))
+    ImageDraw.Draw(star_icon).polygon([(10,1),(12,7),(19,7),(14,11),(16,19),
+                                       (10,14),(4,19),(6,11),(1,7),(8,7)],fill='#f7c948')
+    star_button=RoundedButton(footer,text='Star',fg='#f7c948',prefix_icon=star_icon,
                               command=open_star_page,
                               font=(FONT_FAMILY,9),padx=10,pady=5)
     star_button.pack(side='right')

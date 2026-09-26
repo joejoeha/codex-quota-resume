@@ -33,10 +33,11 @@ def loop(root,*args,**kwargs):
     def check():
         try:
             update_button=button(root,'检查更新')
-            star_button=button(root,'★ Star')
+            star_button=button(root,'Star')
             assert update_button.winfo_viewable() and star_button.winfo_viewable()
             assert update_button.fill=='#2d6acb'
             assert star_button.cget('fg')=='#f7c948'
+            assert star_button.prefix_icon.size==(20,20)
             assert update_button.winfo_rootx()<star_button.winfo_rootx()
             assert star_button.winfo_rooty()+star_button.winfo_height()<=root.winfo_rooty()+root.winfo_height()
             assert not any(w.cget('text')=='关于' for w in walk(root) if isinstance(w,tk.Button))
