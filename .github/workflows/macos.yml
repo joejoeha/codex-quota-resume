@@ -28,6 +28,7 @@ jobs:
           python scripts/test_backup.py
           python scripts/test_live_status.py
           python scripts/test_popup.py
+          python scripts/test_github_star.py
           python scripts/test_placement.py
           python scripts/test_macos.py
           python scripts/test_macos_agent_compat.py
@@ -36,6 +37,7 @@ jobs:
       - name: Native UI smoke check
         run: |
           python scripts/test_macos_ui.py
+          python scripts/test_star_ui.py
           python scripts/test_file_attachments.py
           python scripts/test_placeholder.py
           python scripts/test_macos_update_ui.py

@@ -113,3 +113,9 @@ The running GUI checks roughly every five seconds for an explicit quota interrup
 Saved follow-ups are requested in the same conversation ten seconds after the resume request is accepted, without waiting for a completion marker or for the running turn to finish. Live quota is still checked. Queued or delivered follow-ups are never replayed. Without a resume event, Save only stores the request; use Send now or Send saved task to submit explicitly.
 
 The macOS preview can check GitHub releases and open the download page while preserving the running app and drafts. Installation remains manual.
+
+### GitHub Star integration (maintainers)
+
+The About window displays the public Star count and offers an optional Star action. A verified Star is cached in the existing local `state.json`; reminders recur at most every seven days and stop after verification. No GitHub token, password, or browser cookie is stored. Without a configured GitHub App, the button opens the repository for a manual Star and never claims success.
+
+Create a GitHub App with homepage `https://github.com/joejoeha/codex-quota-resume`, **Starring: Read and write** user permission, and the default **Metadata: Read** repository permission. Enable **Device Flow**. No callback URL is used by this flow; if registration requires one, use the project homepage. Set `CODEX_QUOTA_GITHUB_CLIENT_ID` before `scripts/build_windows.ps1` to embed the public Client ID. Local source runs can use the same environment variable. Never embed a Client Secret. GitHub's authorization-code + PKCE exchange currently still requires that secret, so this desktop client uses GitHub's documented Device Flow instead. See the [GitHub App token documentation](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-user-access-token-for-a-github-app). Run `python -X utf8 scripts/test_github_star.py` and `python -X utf8 scripts/test_star_ui.py` locally.

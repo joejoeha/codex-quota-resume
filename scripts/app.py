@@ -19,6 +19,8 @@ from tkinter import ttk, messagebox
 from PIL import Image, ImageDraw, ImageTk
 import quota_watcher as w
 import updater
+import github_star
+import star_ui
 import plan_dialog  # Load the composer once with the application.
 if sys.platform == 'darwin':
     from tray_macos import TrayIcon
@@ -184,6 +186,9 @@ def show():
         padx=8,pady=7,cursor='hand2',takefocus=True)
     github_button.image=github_icon
     github_button.pack(side='right',padx=(0,12))
+    about_button=RoundedButton(footer,text='关于',command=lambda:star_ui.show_about(root,w),
+                               font=(FONT_FAMILY,9),padx=10,pady=5)
+    about_button.pack(side='right',padx=(0,6))
     def button(parent,text,command,blue=False):
         b=RoundedButton(parent,text=text,command=command,bg='#2d6acb' if blue else '#2b2b2b',font=(FONT_FAMILY,10),padx=10)
         b.pack(side='left',padx=(0,6));return b
@@ -346,6 +351,19 @@ def show():
             results.put(('monitor',monitor_indicator()))
             time.sleep(5)
     tick();load_threads()
+    def star_reminder():
+        if root.state()!='normal':
+            root.after(60000,star_reminder)
+            return
+        if any(isinstance(child,tk.Toplevel) and child.title()=='关于 Codex Quota Resume'
+               for child in root.winfo_children()):
+            return
+        star=w.load_state().get('githubStar',{})
+        now=time.time()
+        if github_star.reminder_due(star,now):
+            w.update_github_star(github_star.prompted_at(now))
+            star_ui.show_about(root,w,reminder=True)
+    root.after(30000,star_reminder)
     threading.Thread(target=refresh_monitor,daemon=True).start()
     root.lift()
     root.tray=TrayIcon(root,exit_interface)
