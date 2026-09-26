@@ -45,9 +45,9 @@ class RoundedButton(tk.Button):
         background=tuple(v//257 for v in self.winfo_rgb(self.master.cget('bg')))
         surface=Image.new('RGB',(width*3,height*3),background)
         draw=ImageDraw.Draw(surface)
-        if color or self.focus_get()==self:
+        if color or (self.focus_get()==self and self.cget('takefocus')!='0'):
             draw.rounded_rectangle((1,1,width*3-2,height*3-2),radius=30,fill=color,
-                                   outline='#8ab4f8' if self.focus_get()==self else color,width=3)
+                                   outline='#8ab4f8' if self.focus_get()==self and self.cget('takefocus')!='0' else color,width=3)
         surface=surface.resize((width,height),Image.Resampling.LANCZOS)
         if content:surface.paste(content,(px,py))
         if icon:surface.paste(icon,(px,(height-icon.height)//2),icon if icon.mode=='RGBA' else None)
