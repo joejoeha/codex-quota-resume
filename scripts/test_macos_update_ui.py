@@ -17,7 +17,7 @@ def walk(widget):
 def mainloop(root):
     def check():
         try:
-            target=next(w for w in walk(root) if isinstance(w,tk.Button) and w.cget('text')=='v'+app.updater.VERSION)
+            target=next(w for w in walk(root) if isinstance(w,tk.Button) and w.cget('text')=='版本')
             target.invoke()
             deadline=time.monotonic()+5
             while not opened.called and time.monotonic()<deadline:

@@ -175,11 +175,11 @@ def show():
         else:background(lambda:updater.update(w.APP_DIR,lambda text:results.put(('update-progress',text))))
     update_available=[False]
     def show_update_state():
-        update_button.configure(text='检查更新' if update_available[0] else 'v'+updater.VERSION,
+        update_button.configure(text='检查更新' if update_available[0] else '版本',
                                 bg='#2d6acb' if update_available[0] else None,
                                 fg='#eeeeee' if update_available[0] else '#888888',
                                 activeforeground='#eeeeee' if update_available[0] else '#888888')
-    update_button=RoundedButton(footer,text='v'+updater.VERSION,command=check_update,
+    update_button=RoundedButton(footer,text='版本',command=check_update,
                                 bg=None,fg='#888888',font=(FONT_FAMILY,9),padx=10,pady=5)
     update_button.pack(side='left')
     star_count=[None]
