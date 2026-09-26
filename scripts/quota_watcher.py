@@ -409,20 +409,7 @@ def _write_state(state: dict) -> None:
 
 def save_state(state: dict) -> None:
     with state_lock():
-        # The monitor may have loaded an older snapshot before the UI saved Star state.
-        current = load_state()
-        if 'githubStar' in current:
-            state['githubStar'] = current['githubStar']
         _write_state(state)
-
-
-def update_github_star(changes: dict) -> dict:
-    with state_lock():
-        state = load_state()
-        star = state.setdefault('githubStar', {})
-        star.update(changes)
-        _write_state(state)
-        return dict(star)
 
 
 def thread_id(path: Path) -> str | None:

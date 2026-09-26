@@ -20,7 +20,6 @@ from PIL import Image, ImageDraw, ImageTk
 import quota_watcher as w
 import updater
 import github_star
-import star_ui
 import plan_dialog  # Load the composer once with the application.
 if sys.platform == 'darwin':
     from tray_macos import TrayIcon
@@ -182,21 +181,16 @@ def show():
     update_button.pack(side='left')
     star_count=[None]
     def show_star_state():
-        starred=w.load_state().get('githubStar',{}).get('verified')
-        text='⭐ Starred' if starred else '⭐ Star'
+        text='★ Star'
         if star_count[0] is not None:text+=f'  {star_count[0]}'
         star_button.configure(text=text)
     def open_star_page():
-        if webbrowser.open(github_star.REPO_URL):
-            w.update_github_star({'opened_repo_at':time.time()})
-    star_button=RoundedButton(footer,text='⭐ Star',
+        webbrowser.open(github_star.REPO_URL)
+    star_button=RoundedButton(footer,text='★ Star',fg='#f7c948',
                               command=open_star_page,
                               font=(FONT_FAMILY,9),padx=10,pady=5)
     star_button.pack(side='right')
     show_star_state()
-    about_button=RoundedButton(footer,text='关于',command=lambda:star_ui.show_about(root,w,on_verified=show_star_state),
-                               font=(FONT_FAMILY,9),padx=10,pady=5)
-    about_button.pack(side='right',padx=(0,6))
     def button(parent,text,command,blue=False):
         b=RoundedButton(parent,text=text,command=command,bg='#2d6acb' if blue else '#2b2b2b',font=(FONT_FAMILY,10),padx=10)
         b.pack(side='left',padx=(0,6));return b
@@ -376,19 +370,6 @@ def show():
         try:results.put(('star-count',github_star.star_count()))
         except Exception:pass
     threading.Thread(target=load_star_count,daemon=True).start()
-    def star_reminder():
-        if root.state()!='normal':
-            root.after(60000,star_reminder)
-            return
-        if any(isinstance(child,tk.Toplevel) and child.title()=='关于 Codex Quota Resume'
-               for child in root.winfo_children()):
-            return
-        star=w.load_state().get('githubStar',{})
-        now=time.time()
-        if github_star.reminder_due(star,now):
-            w.update_github_star(github_star.prompted_at(now))
-            star_ui.show_about(root,w,reminder=True)
-    root.after(30000,star_reminder)
     threading.Thread(target=refresh_monitor,daemon=True).start()
     root.lift()
     root.tray=TrayIcon(root,exit_interface)
