@@ -186,12 +186,15 @@ def show():
         text='⭐ Starred' if starred else '⭐ Star'
         if star_count[0] is not None:text+=f'  {star_count[0]}'
         star_button.configure(text=text)
+    def open_star_page():
+        if webbrowser.open(github_star.REPO_URL):
+            w.update_github_star({'opened_repo_at':time.time()})
     star_button=RoundedButton(footer,text='⭐ Star',
-                              command=lambda:star_ui.show_about(root,w,auto_star=True,on_verified=show_star_state),
+                              command=open_star_page,
                               font=(FONT_FAMILY,9),padx=10,pady=5)
     star_button.pack(side='right')
     show_star_state()
-    about_button=RoundedButton(footer,text='关于',command=lambda:star_ui.show_about(root,w),
+    about_button=RoundedButton(footer,text='关于',command=lambda:star_ui.show_about(root,w,on_verified=show_star_state),
                                font=(FONT_FAMILY,9),padx=10,pady=5)
     about_button.pack(side='right',padx=(0,6))
     def button(parent,text,command,blue=False):
