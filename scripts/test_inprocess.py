@@ -32,11 +32,12 @@ def loop(root,*args,**kwargs):
     root.report_callback_exception=lambda kind,error,tb:errors.append(error)
     def check():
         try:
-            version_label=next(w for w in walk(root) if isinstance(w,tk.Label) and w.cget('text')=='v'+app.updater.VERSION)
             update_button=button(root,'检查更新')
-            assert version_label.winfo_viewable() and update_button.winfo_viewable()
-            assert version_label.winfo_rootx()<update_button.winfo_rootx()
-            assert update_button.winfo_rooty()+update_button.winfo_height()<=root.winfo_rooty()+root.winfo_height()
+            star_button=button(root,'⭐ Star')
+            assert update_button.winfo_viewable() and star_button.winfo_viewable()
+            assert update_button.fill=='#2d6acb'
+            assert update_button.winfo_rootx()<star_button.winfo_rootx()
+            assert star_button.winfo_rooty()+star_button.winfo_height()<=root.winfo_rooty()+root.winfo_height()
             started=time.perf_counter()
             assert root.tray.hwnd.value==window_handle(root).value
             assert len([w for w in root.winfo_children() if isinstance(w,tk.Toplevel)])==1, 'Quota event should open the composer automatically'
@@ -165,10 +166,10 @@ def loop(root,*args,**kwargs):
             errors.append(error)
             try:root.destroy()
             except tk.TclError:pass
-    root.after(2500,check)
+    root.after(4000,check)
     return original(root,*args,**kwargs)
 with tempfile.TemporaryDirectory() as directory:
     folder=Path(directory);source=folder/'sample.txt';source.write_text('local file',encoding='utf-8')
-    with patch.object(tray,'GROUP','CodexQuotaResume.Test.'+uuid.uuid4().hex),patch.object(app.w,'latest_candidate',return_value={'threadId':thread,'key':'test-quota','quotaError':True}),patch.object(app.w,'APP_DIR',folder),patch.object(app.w,'load_state',return_value={}),patch.object(app.w,'find_codex',return_value='codex'),patch.object(app.w.codex_status,'connection',connection),patch.object(app,'monitor_indicator',return_value=('', '', True)),patch.object(app.subprocess,'Popen') as launch,patch.object(tk.Tk,'mainloop',loop):
+    with patch.object(tray,'GROUP','CodexQuotaResume.Test.'+uuid.uuid4().hex),patch.object(app.w,'latest_candidate',return_value={'threadId':thread,'key':'test-quota','quotaError':True}),patch.object(app.w,'APP_DIR',folder),patch.object(app.w,'load_state',return_value={}),patch.object(app.w,'find_codex',return_value='codex'),patch.object(app.w.codex_status,'connection',connection),patch.object(app,'monitor_indicator',return_value=('', '', True)),patch.object(app.updater,'check_windows_update',return_value=True),patch.object(app.github_star,'star_count',return_value=None),patch.object(app.subprocess,'Popen') as launch,patch.object(tk.Tk,'mainloop',loop):
         app.show()
 assert not errors,errors
