@@ -18,4 +18,6 @@ jobs:
       - run: python scripts/test_popup.py
       - run: python scripts/test_app.py
       - run: python scripts/test_updater.py
+      - run: python scripts/test_github_star.py
+      - run: python scripts/test_star_ui.py
       - run: python scripts/test_delayed_followup.py

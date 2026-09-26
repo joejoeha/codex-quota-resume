@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 import codex_status
@@ -374,13 +375,54 @@ def load_state() -> dict:
         return {"version": 1, "pending": None, "activeDispatch": None, "sent": {}}
 
 
-def save_state(state: dict) -> None:
+@contextmanager
+def state_lock():
+    APP_DIR.mkdir(parents=True, exist_ok=True)
+    with (APP_DIR / 'state.lock').open('a+b') as lock:
+        if lock.seek(0, 2) == 0:
+            lock.write(b'0'); lock.flush()
+        lock.seek(0)
+        if os.name == 'nt':
+            import msvcrt
+            msvcrt.locking(lock.fileno(), msvcrt.LK_LOCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            lock.seek(0)
+            if os.name == 'nt':
+                msvcrt.locking(lock.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+
+
+def _write_state(state: dict) -> None:
     APP_DIR.mkdir(parents=True, exist_ok=True)
     state["sent"] = dict(list(state.get("sent", {}).items())[-100:])
     with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=APP_DIR, delete=False) as stream:
         json.dump(state, stream, ensure_ascii=False, indent=2)
         temp_path = Path(stream.name)
     temp_path.replace(STATE_PATH)
+
+
+def save_state(state: dict) -> None:
+    with state_lock():
+        # The monitor may have loaded an older snapshot before the UI saved Star state.
+        current = load_state()
+        if 'githubStar' in current:
+            state['githubStar'] = current['githubStar']
+        _write_state(state)
+
+
+def update_github_star(changes: dict) -> dict:
+    with state_lock():
+        state = load_state()
+        star = state.setdefault('githubStar', {})
+        star.update(changes)
+        _write_state(state)
+        return dict(star)
 
 
 def thread_id(path: Path) -> str | None:
