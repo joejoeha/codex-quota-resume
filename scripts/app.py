@@ -202,8 +202,7 @@ def show():
                 widget.fill=button_fill;widget.configure(fg=button_text,activeforeground=button_text);widget.redraw()
             for child in widget.winfo_children():apply(child)
         apply(frame)
-        root.configure(bg=background)
-        root.window_canvas.configure(bg=background)
+        root.window_canvas.configure(bg='#010203' if sys.platform!='darwin' else 'systemTransparent')
         root.window_canvas.itemconfigure(root.window_shape,fill=background,outline='#d0d5dd' if theme_light[0] else '#383838')
         root.window_body.configure(bg=background)
     appearance_button=RoundedButton(footer,text='外观',command=toggle_theme,
