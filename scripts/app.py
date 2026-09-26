@@ -150,7 +150,7 @@ def show():
     monitor_dot.pack(side='right',padx=(0,8))
     dot_images={}
     for enabled,color in ((True,'#43c77a'),(False,'#ef5350')):
-        image=Image.new('RGB',(144,144),'#181818')
+        image=Image.new('RGBA',(144,144),(0,0,0,0))
         ImageDraw.Draw(image).ellipse((12,12,131,131),fill=color)
         dot_images[enabled]=ImageTk.PhotoImage(image.resize((36,36),Image.Resampling.LANCZOS),master=root)
     dot=monitor_dot.create_image(0,0,anchor='nw',image=dot_images[False])
@@ -202,6 +202,9 @@ def show():
             for child in widget.winfo_children():apply(child)
         apply(frame)
         root.configure(bg=background)
+        root.window_canvas.configure(bg=background)
+        root.window_canvas.itemconfigure(root.window_shape,fill=background,outline='#d0d5dd' if theme_light[0] else '#383838')
+        root.window_body.configure(bg=background)
     appearance_button=RoundedButton(footer,text='外观',command=toggle_theme,
                                      font=(FONT_FAMILY,9),padx=10,pady=5)
     appearance_button.pack(side='left')
@@ -222,12 +225,12 @@ def show():
                               font=(FONT_FAMILY,9,'bold'),padx=8,pady=5)
     star_button.pack(side='right')
     show_star_state()
-    prompt_canvas=tk.Canvas(footer,height=28,bg='#181818',highlightthickness=0,bd=0)
+    prompt_canvas=tk.Canvas(footer,width=220,height=28,bg='#181818',highlightthickness=0,bd=0)
     prompt_after=[None];prompt_active=[False];prompt_token=[0]
     def show_star_prompt():
         if prompt_active[0]:return
         prompt_active[0]=True;prompt_token[0]+=1;token=prompt_token[0]
-        prompt_canvas.pack(side='left',fill='x',expand=True,padx=(5,5))
+        prompt_canvas.pack(side='left',padx=(5,0))
         prompt_canvas.delete('all')
         def start_scroll():
             if token!=prompt_token[0]:return

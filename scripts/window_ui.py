@@ -292,11 +292,12 @@ def rounded_window(root,width,height):
     canvas=tk.Canvas(root,bg=background,highlightthickness=0)
     canvas.pack(fill='both',expand=True)
     radius=48
-    canvas.create_polygon(radius,1,width-radius,1,width-1,1,width-1,radius,
+    shape=canvas.create_polygon(radius,1,width-radius,1,width-1,1,width-1,radius,
                           width-1,height-radius,width-1,height-1,width-radius,height-1,
                           radius,height-1,1,height-1,1,height-radius,1,radius,1,1,
                           smooth=True,fill='#181818',outline='#383838',width=1)
     body=tk.Frame(root,bg='#181818')
+    root.window_canvas=canvas;root.window_shape=shape;root.window_body=body
     body.place(x=28,y=22,width=width-56,height=height-44)
     bind_drag(root,canvas,body)
     root.bind('<Map>',lambda event:root.after_idle(lambda:configure_taskbar(root)) if event.widget==root else None,add='+')
