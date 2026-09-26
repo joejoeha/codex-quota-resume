@@ -1,7 +1,6 @@
 """Build on macOS only; use --dist-dir outside synced folders when needed."""
 import argparse
 import hashlib
-import os
 import platform
 import subprocess
 import sys
@@ -19,8 +18,6 @@ def main():
     dist.mkdir(parents=True, exist_ok=True)
     build = root / 'build'
     build.mkdir(exist_ok=True)
-    client_id_path = build / 'github-client-id.txt'
-    client_id_path.write_text(os.environ.get('CODEX_QUOTA_GITHUB_CLIENT_ID', ''), encoding='utf-8')
     from PIL import Image
     with Image.open(root / 'assets/app-icon.png') as image:
         image.convert('RGBA').resize((1024, 1024)).save(build / 'app-icon.icns')
@@ -30,7 +27,6 @@ def main():
                     '--icon', str(build / 'app-icon.icns'),
                     '--add-data', str(root / 'assets/github-mark.png') + ':.',
                     '--add-data', str(root / 'assets/app-icon.png') + ':.',
-                    '--add-data', str(client_id_path) + ':.',
                     '--hidden-import', 'AppKit', '--hidden-import', 'Foundation',
                     '--distpath', str(dist), '--workpath', str(build),
                     '--specpath', str(build), str(root / 'scripts/app.py')], check=True, cwd=root)
