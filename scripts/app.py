@@ -228,6 +228,7 @@ def show():
         appearance_button.prefix_icon=theme_icon(theme_light[0]);appearance_button.redraw()
     appearance_button=RoundedButton(footer,text='',fg='#f7c948',prefix_icon=theme_icon(False),command=toggle_theme,
                                      font=(FONT_FAMILY,12),padx=6,pady=3)
+    appearance_button.configure(takefocus=False)
     appearance_button.pack(side='left')
     appearance_button.bind('<ButtonRelease-1>',lambda event:root.focus_set(),add='+')
     star_count=[None]
