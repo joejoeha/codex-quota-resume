@@ -40,13 +40,14 @@ class RoundedButton(tk.Button):
         width=self.fixed_width or (content.width if content else text_width)+2*px
         height=max(content.height if content else font.metrics('linespace'),icon.height if icon else 0)+2*py
         color=self.fill
-        if hover:
+        if hover and color:
             color='#'+''.join(f'{min(255,int(color[i:i+2],16)+16):02x}' for i in (1,3,5))
         background=tuple(v//257 for v in self.winfo_rgb(self.master.cget('bg')))
         surface=Image.new('RGB',(width*3,height*3),background)
         draw=ImageDraw.Draw(surface)
-        draw.rounded_rectangle((1,1,width*3-2,height*3-2),radius=30,fill=color,
-                               outline='#8ab4f8' if self.focus_get()==self else color,width=3)
+        if color or self.focus_get()==self:
+            draw.rounded_rectangle((1,1,width*3-2,height*3-2),radius=30,fill=color,
+                                   outline='#8ab4f8' if self.focus_get()==self else color,width=3)
         surface=surface.resize((width,height),Image.Resampling.LANCZOS)
         if content:surface.paste(content,(px,py))
         if icon:surface.paste(icon,(px,(height-icon.height)//2),icon if icon.mode=='RGBA' else None)
