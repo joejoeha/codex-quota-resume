@@ -177,8 +177,10 @@ def show():
     def show_update_state():
         if update_available[0]:
             update_button.pack(side='left')
+            appearance_button.pack_forget()
         else:
             update_button.pack_forget()
+            appearance_button.pack(side='left')
         update_button.configure(text='检查更新',
                                 bg='#2d6acb' if update_available[0] else None,
                                 fg='#eeeeee' if update_available[0] else '#888888',
@@ -186,6 +188,23 @@ def show():
     update_button=RoundedButton(footer,text='检查更新',command=check_update,
                                 bg=None,fg='#888888',font=(FONT_FAMILY,9),padx=10,pady=5)
     update_button.pack_forget()
+    theme_light=[False]
+    def toggle_theme():
+        theme_light[0]=not theme_light[0]
+        background='#f5f5f5' if theme_light[0] else '#181818'
+        foreground='#202124' if theme_light[0] else '#eeeeee'
+        button_fill='#e5e7eb' if theme_light[0] else '#2b2b2b'
+        def apply(widget):
+            if isinstance(widget,tk.Label):widget.configure(bg=background,fg=foreground)
+            elif isinstance(widget,(tk.Frame,tk.Canvas)):widget.configure(bg=background)
+            if isinstance(widget,RoundedButton):
+                widget.fill=button_fill;widget.configure(fg=foreground);widget.redraw()
+            for child in widget.winfo_children():apply(child)
+        apply(frame)
+        root.configure(bg=background)
+    appearance_button=RoundedButton(footer,text='外观',command=toggle_theme,
+                                     font=(FONT_FAMILY,9),padx=10,pady=5)
+    appearance_button.pack(side='left')
     star_count=[None]
     def show_star_state():
         text='\u2003\u2003Star'
