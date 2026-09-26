@@ -13,11 +13,12 @@ FONT_FAMILY = 'PingFang SC' if sys.platform == 'darwin' else 'Microsoft YaHei UI
 class RoundedButton(tk.Button):
     """Keep native button keyboard/command behavior with a rounded image surface."""
     def __init__(self, parent, *, text='', command=None, bg='#2b2b2b', fg='#eeeeee',
-                 font=(FONT_FAMILY, 11), padx=14, pady=10, image=None, width_px=None):
+                 font=(FONT_FAMILY, 11), padx=14, pady=10, image=None, width_px=None, prefix_icon=None):
         self.fixed_width=width_px
         self.fill=bg
         self.padding=(padx,pady)
         self.content_image=image
+        self.prefix_icon=prefix_icon
         super().__init__(parent,text=text,command=command,font=font,fg=fg,
                          bg=parent.cget('bg'),activebackground=parent.cget('bg'),
                          activeforeground=fg,relief='flat',bd=0,highlightthickness=0,
@@ -34,8 +35,10 @@ class RoundedButton(tk.Button):
         font=tkfont.Font(font=self.cget('font'))
         px,py=self.padding
         content=self.content_image
-        width=self.fixed_width or (content.width if content else font.measure(self.cget('text')))+2*px
-        height=(content.height if content else font.metrics('linespace'))+2*py
+        icon=self.prefix_icon
+        text_width=font.measure(self.cget('text'))+2*(icon.width+4) if icon else font.measure(self.cget('text'))
+        width=self.fixed_width or (content.width if content else text_width)+2*px
+        height=max(content.height if content else font.metrics('linespace'),icon.height if icon else 0)+2*py
         color=self.fill
         if hover:
             color='#'+''.join(f'{min(255,int(color[i:i+2],16)+16):02x}' for i in (1,3,5))
@@ -46,6 +49,7 @@ class RoundedButton(tk.Button):
                                outline='#8ab4f8' if self.focus_get()==self else color,width=3)
         surface=surface.resize((width,height),Image.Resampling.LANCZOS)
         if content:surface.paste(content,(px,py))
+        if icon:surface.paste(icon,(px,(height-icon.height)//2),icon if icon.mode=='RGBA' else None)
         self.surface=ImageTk.PhotoImage(surface,master=self)
         super().configure(image=self.surface)
 
