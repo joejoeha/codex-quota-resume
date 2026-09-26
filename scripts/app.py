@@ -198,15 +198,18 @@ def show():
             if isinstance(widget,tk.Label):widget.configure(bg=background,fg=foreground)
             elif isinstance(widget,(tk.Frame,tk.Canvas)):widget.configure(bg=background)
             if isinstance(widget,RoundedButton):
-                button_text='#ffffff' if theme_light[0] else foreground
+                button_text=('#ffffff' if widget is enable_button else
+                             '#f7c948' if widget in (star_button,appearance_button) else
+                             '#202124') if theme_light[0] else foreground
                 widget.fill=button_fill;widget.configure(fg=button_text,activeforeground=button_text);widget.redraw()
             for child in widget.winfo_children():apply(child)
         apply(frame)
         root.window_canvas.configure(bg='#010203' if sys.platform!='darwin' else 'systemTransparent')
         root.window_canvas.itemconfigure(root.window_shape,fill=background,outline='#d0d5dd' if theme_light[0] else '#383838')
         root.window_body.configure(bg=background)
-    appearance_button=RoundedButton(footer,text='外观',command=toggle_theme,
-                                     font=(FONT_FAMILY,9),padx=10,pady=5)
+        appearance_button.configure(text='☾' if theme_light[0] else '☀',fg='#f7c948',activeforeground='#f7c948')
+    appearance_button=RoundedButton(footer,text='☀',fg='#f7c948',command=toggle_theme,
+                                     font=(FONT_FAMILY,12),padx=8,pady=3)
     appearance_button.pack(side='left')
     star_count=[None]
     def show_star_state():
