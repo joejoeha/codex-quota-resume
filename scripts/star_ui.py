@@ -9,7 +9,7 @@ import github_star as gh
 from window_ui import FONT_FAMILY, RoundedButton
 
 
-def show_about(parent, watcher, reminder=False):
+def show_about(parent, watcher, reminder=False, auto_star=False, on_verified=None):
     panel = tk.Toplevel(parent)
     panel.title('关于 Codex Quota Resume')
     panel.configure(bg='#181818')
@@ -133,6 +133,7 @@ def show_about(parent, watcher, reminder=False):
                     working[0] = False
                     star_button.configure(text='⭐ Starred', bg='#21854d')
                     status.configure(text='已由 GitHub 确认 Star，谢谢支持！')
+                    if on_verified:on_verified()
                 elif kind == 'fallback':
                     working[0] = False
                     fallback()
@@ -141,4 +142,6 @@ def show_about(parent, watcher, reminder=False):
         panel.after(200, poll)
 
     poll()
+    if auto_star:
+        panel.after(100, start_star)
     return panel

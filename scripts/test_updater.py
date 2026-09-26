@@ -22,6 +22,9 @@ def fetch(url):
 with tempfile.TemporaryDirectory() as folder, patch.object(u,'fetch',side_effect=fetch), patch.object(u.subprocess,'run') as run, patch.object(u.subprocess,'Popen') as launch:
     run.return_value.returncode=0
     root=Path(folder);(root/'paused.flag').touch();(root/'plan.json').write_text('draft')
+    assert u.check_windows_update(current='3.0.0-beta.15')
+    assert not u.check_windows_update(current='3.0.0-beta.16')
+    assert not run.called and not launch.called
     assert not u.update(root,current='3.0.0-beta.16')['updated']
     assert not run.called
     assert u.update(root,current='3.0.0-beta.15')['updated']
@@ -42,11 +45,19 @@ script=base64.b64decode(commands[0][-1]).decode('utf-16le')
 assert 'Set-ScheduledTask' in script
 assert all(x not in script for x in ('Stop-ScheduledTask','Enable-ScheduledTask','Start-ScheduledTask','paused.flag'))
 with tempfile.TemporaryDirectory() as folder:
-    def limited(url):
+    atom=f'<feed xmlns="http://www.w3.org/2005/Atom"><entry><link href="https://github.com/{u.REPO}/releases/tag/v3.0.0-beta.16"/></entry></feed>'.encode()
+    def limited(url,method='GET'):
         if 'api.github.com' in url:raise u.urllib.error.HTTPError(url,403,'rate limit',{},None)
-        response=io.BytesIO(b'')
-        response.geturl=lambda:f'https://github.com/{u.REPO}/releases/tag/v3.0.0-beta.16'
-        return response
+        if url.endswith('releases.atom'):return io.BytesIO(atom)
+        if method=='HEAD':return io.BytesIO()
+        raise AssertionError(url)
     with patch.object(u,'fetch',side_effect=limited):
+        assert u.check_windows_update(current='3.0.0-beta.15')
+        assert not u.check_windows_update(current='3.0.0-beta.16')
         assert not u.update(folder)['updated']
+    def missing(url,method='GET'):
+        if method=='HEAD':raise u.urllib.error.HTTPError(url,404,'missing',{},None)
+        return limited(url,method)
+    with patch.object(u,'fetch',side_effect=missing):
+        assert not u.check_windows_update(current='3.0.0-beta.15')
 print('UPDATER_OK')

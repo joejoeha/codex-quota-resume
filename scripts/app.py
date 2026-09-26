@@ -133,7 +133,6 @@ def show():
     root.protocol('WM_DELETE_WINDOW',close_main)
     frame=rounded_window(root,430,535)
     footer=tk.Frame(frame,bg='#181818');footer.pack(side='bottom',fill='x',pady=(8,0))
-    tk.Label(footer,text='v'+updater.VERSION,bg='#181818',fg='#999999',font=(FONT_FAMILY,9)).pack(side='left')
     style=ttk.Style(root); style.theme_use('clam')
     style.configure('TScrollbar',background='#383838',troughcolor='#242424',
                     bordercolor='#242424',arrowcolor='#aaaaaa',lightcolor='#383838',darkcolor='#383838')
@@ -174,18 +173,24 @@ def show():
         update_button.configure(text='检查中…')
         if sys.platform=='darwin':background(updater.check_macos_update)
         else:background(lambda:updater.update(w.APP_DIR,lambda text:results.put(('update-progress',text))))
-    update_button=RoundedButton(footer,text='检查更新',command=check_update,font=(FONT_FAMILY,9),padx=10,pady=5)
-    update_button.pack(side='right')
-    github_path=Path(__file__).with_name('github-mark.png')
-    if not github_path.exists():github_path=Path(__file__).parent.parent/'assets'/'github-mark.png'
-    with Image.open(github_path) as icon:
-        github_icon=ImageTk.PhotoImage(icon.resize((16,16),Image.Resampling.LANCZOS),master=root)
-    github_button=tk.Button(footer,name='github_link',image=github_icon,
-        command=lambda:webbrowser.open('https://github.com/joejoeha/codex-quota-resume'),
-        bg='#181818',activebackground='#2b2b2b',bd=0,highlightthickness=0,
-        padx=8,pady=7,cursor='hand2',takefocus=True)
-    github_button.image=github_icon
-    github_button.pack(side='right',padx=(0,12))
+    update_available=[False]
+    def show_update_state():
+        update_button.configure(text='检查更新' if update_available[0] else 'v'+updater.VERSION,
+                                bg='#2d6acb' if update_available[0] else '#2b2b2b')
+    update_button=RoundedButton(footer,text='v'+updater.VERSION,command=check_update,
+                                font=(FONT_FAMILY,9),padx=10,pady=5)
+    update_button.pack(side='left')
+    star_count=[None]
+    def show_star_state():
+        starred=w.load_state().get('githubStar',{}).get('verified')
+        text='⭐ Starred' if starred else '⭐ Star'
+        if star_count[0] is not None:text+=f'  {star_count[0]}'
+        star_button.configure(text=text)
+    star_button=RoundedButton(footer,text='⭐ Star',
+                              command=lambda:star_ui.show_about(root,w,auto_star=True,on_verified=show_star_state),
+                              font=(FONT_FAMILY,9),padx=10,pady=5)
+    star_button.pack(side='right')
+    show_star_state()
     about_button=RoundedButton(footer,text='关于',command=lambda:star_ui.show_about(root,w),
                                font=(FONT_FAMILY,9),padx=10,pady=5)
     about_button.pack(side='right',padx=(0,6))
@@ -299,9 +304,16 @@ def show():
                                         bg='#21854d' if enabled else '#2d6acb')
             elif kind=='update-progress':
                 note.configure(text=value)
+            elif kind=='update-available':
+                update_available[0]=value
+                if not busy[0]:show_update_state()
+            elif kind=='star-count':
+                star_count[0]=value
+                show_star_state()
             elif isinstance(value,dict) and value.get('macosUpdate'):
                 busy[0]=False
-                update_button.configure(text='检查更新')
+                update_available[0]=value['available']
+                show_update_state()
                 if value['available']:
                     note.configure(text='发现新版 '+value['version']+'，可从发布页下载。')
                     availability=('包含当前 Mac 架构的下载包。' if value.get('downloadUrl') else
@@ -318,13 +330,14 @@ def show():
                                          if value.get('limited') else '未发现更新的发布版本。'))
             elif isinstance(value,dict) and 'updated' in value:
                 busy[0]=False
-                update_button.configure(text='检查更新')
+                update_available[0]=False
+                show_update_state()
                 note.configure(text=('已安装 '+value['version'] if value['updated'] else '当前已是最新版本。'))
                 if value['updated']:
                     exit_interface()
                     if not open_plans:return
             elif kind=='error':
-                update_button.configure(text='检查更新')
+                show_update_state()
                 busy[0]=False
                 note.configure(text='操作失败，详情已显示');messagebox.showerror('操作失败',value,parent=root)
             elif isinstance(value,list):
@@ -351,6 +364,15 @@ def show():
             results.put(('monitor',monitor_indicator()))
             time.sleep(5)
     tick();load_threads()
+    if sys.platform=='win32':
+        def check_available():
+            try:results.put(('update-available',updater.check_windows_update()))
+            except Exception:pass
+        threading.Thread(target=check_available,daemon=True).start()
+    def load_star_count():
+        try:results.put(('star-count',github_star.star_count()))
+        except Exception:pass
+    threading.Thread(target=load_star_count,daemon=True).start()
     def star_reminder():
         if root.state()!='normal':
             root.after(60000,star_reminder)

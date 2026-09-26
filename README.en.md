@@ -102,7 +102,7 @@ Multiple composers are tiled in opening order on the same side of the main windo
 
 ### In-app updates (Windows)
 
-The bottom-left corner shows the version. Click the bottom-right update button to download a newer GitHub release, verify SHA256 and install it automatically. The new app opens after installation; existing draft windows remain available for saving. Saved tasks, attachments and monitor enabled/paused state are preserved. macOS developer previews still require manual download.
+The bottom-left button normally shows the current version. After a background release check, it turns blue and says “检查更新” when a newer Windows build is available. Click it to download the release, verify SHA256 and install it. The bottom-right Star button lets you support the project. The new app opens after installation; existing draft windows remain available for saving. Saved tasks, attachments and monitor enabled/paused state are preserved. macOS developer previews can check manually and still require manual download.
 
 ### Automatic composer on quota interruption
 

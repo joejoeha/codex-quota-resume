@@ -12,6 +12,7 @@ import time
 import urllib.request
 import urllib.error
 import urllib.parse
+from xml.etree import ElementTree as ET
 
 VERSION = '3.0.0-beta.39'
 REPO = 'joejoeha/codex-quota-resume'
@@ -26,9 +27,9 @@ def version(value):
     return int(major), int(minor), int(patch), beta is None, int(beta or 0)
 
 
-def fetch(url):
+def fetch(url, method='GET'):
     return urllib.request.urlopen(urllib.request.Request(url, headers={
-        'User-Agent': 'CodexQuotaResume/' + VERSION}), timeout=60)
+        'User-Agent': 'CodexQuotaResume/' + VERSION}, method=method), timeout=60)
 
 
 def asset_url(release, name):
@@ -105,6 +106,42 @@ try {
                  base64.b64encode(script.encode('utf-16le')).decode('ascii')])
 
 
+def windows_release(current=VERSION):
+    try:
+        with fetch(f'https://api.github.com/repos/{REPO}/releases?per_page=100') as response:
+            releases = json.load(response)
+    except urllib.error.HTTPError as error:
+        if error.code not in (403, 429):raise
+        with fetch(f'https://github.com/{REPO}/releases.atom') as response:
+            feed = ET.fromstring(response.read())
+        prefix = f'https://github.com/{REPO}/releases/tag/'
+        releases = []
+        for entry in feed.findall('{http://www.w3.org/2005/Atom}entry'):
+            link = entry.find('{http://www.w3.org/2005/Atom}link')
+            url = link.get('href', '') if link is not None else ''
+            tag = urllib.parse.unquote(url[len(prefix):]) if url.startswith(prefix) else ''
+            if not version(tag) or version(tag) <= version(current):continue
+            assets = []
+            for name in (ASSET, 'SHA256SUMS.txt'):
+                asset = f'https://github.com/{REPO}/releases/download/{tag}/{name}'
+                try:
+                    with fetch(asset, method='HEAD'):pass
+                except urllib.error.HTTPError as missing:
+                    if missing.code == 404:break
+                    raise
+                assets.append({'name': name, 'browser_download_url': asset})
+            if len(assets) == 2:releases.append({'draft': False, 'tag_name': tag, 'assets': assets})
+    candidates = [r for r in releases if not r['draft'] and version(r['tag_name'])
+                  and version(r['tag_name']) > version(current)
+                  and {ASSET, 'SHA256SUMS.txt'} <= {a['name'] for a in r['assets']}]
+    return max(candidates, key=lambda r: version(r['tag_name'])) if candidates else None
+
+
+def check_windows_update(current=VERSION):
+    """Check release metadata without downloading or installing anything."""
+    return windows_release(current) is not None
+
+
 def update(directory, progress=lambda text: None, current=VERSION):
     if os.name != 'nt':
         raise RuntimeError('macOS 开发预览暂不支持自动安装，请从 GitHub Releases 下载。')
@@ -118,26 +155,9 @@ def update(directory, progress=lambda text: None, current=VERSION):
         except OSError:
             raise RuntimeError('另一个窗口正在更新，请稍后重试。')
         progress('正在检查 GitHub 新版本…')
-        try:
-            with fetch(f'https://api.github.com/repos/{REPO}/releases?per_page=100') as response:
-                releases = json.load(response)
-        except urllib.error.HTTPError as error:
-            if error.code not in (403, 429):raise
-            # Public latest-release redirect works without an API quota or token.
-            with fetch(f'https://github.com/{REPO}/releases/latest?check={int(time.time())}') as response:
-                url = response.geturl()
-            prefix = f'https://github.com/{REPO}/releases/tag/'
-            tag = urllib.parse.unquote(url[len(prefix):]) if url.startswith(prefix) else ''
-            if not version(tag):raise RuntimeError('无法确认 GitHub 最新版本，请稍后重试。')
-            releases = [{'draft': False, 'tag_name': tag, 'assets': [
-                {'name': name, 'browser_download_url': f'https://github.com/{REPO}/releases/download/{tag}/{name}'}
-                for name in (ASSET, 'SHA256SUMS.txt')]}]
-        candidates = [r for r in releases if not r['draft'] and version(r['tag_name'])
-                      and version(r['tag_name']) > version(current)
-                      and {ASSET, 'SHA256SUMS.txt'} <= {a['name'] for a in r['assets']}]
-        if not candidates:
+        release = windows_release(current)
+        if not release:
             return {'updated': False, 'version': current}
-        release = max(candidates, key=lambda r: version(r['tag_name']))
         tag = release['tag_name']
         with fetch(asset_url(release, 'SHA256SUMS.txt')) as response:
             sums = response.read().decode('utf-8-sig')
