@@ -213,7 +213,7 @@ def show():
     star_icon=star_icon.resize((20,20),Image.Resampling.LANCZOS)
     star_button=RoundedButton(footer,text='\u2003\u2003Star',fg='#f7c948',prefix_icon=star_icon,
                               command=open_star_page,
-                              font=(FONT_FAMILY,9),padx=10,pady=5)
+                              font=(FONT_FAMILY,9,'bold'),padx=8,pady=5)
     star_button.pack(side='right')
     show_star_state()
     prompt_canvas=tk.Canvas(footer,height=28,bg='#181818',highlightthickness=0,bd=0)
