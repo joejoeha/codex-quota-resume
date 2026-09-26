@@ -200,24 +200,30 @@ def show():
     star_button.pack(side='right')
     show_star_state()
     prompt_canvas=tk.Canvas(footer,height=28,bg='#181818',highlightthickness=0,bd=0)
-    prompt_after=[None]
+    prompt_after=[None];prompt_active=[False];prompt_token=[0]
     def show_star_prompt():
-        if prompt_after[0]:root.after_cancel(prompt_after[0])
+        if prompt_active[0]:return
+        prompt_active[0]=True;prompt_token[0]+=1;token=prompt_token[0]
         prompt_canvas.pack(side='left',fill='x',expand=True,padx=(5,5))
         prompt_canvas.delete('all')
         def start_scroll():
+            if token!=prompt_token[0]:return
             item=prompt_canvas.create_text(prompt_canvas.winfo_width(),14,anchor='w',
                                            text=STAR_PROMPT_TEXT,fill='#3b90ff',font=(FONT_FAMILY,9))
             def scroll():
-                if not prompt_canvas.winfo_exists():return
+                if token!=prompt_token[0] or not prompt_canvas.winfo_exists():return
                 prompt_canvas.move(item,-2,0)
                 if prompt_canvas.bbox(item)[2]<0:
                     prompt_canvas.delete(item)
-                    prompt_canvas.pack_forget()
+                    root.after(300,start_scroll)
                 else:root.after(40,scroll)
             scroll()
         root.after_idle(start_scroll)
-        prompt_after[0]=root.after(300000,prompt_canvas.pack_forget)
+        def stop_scroll():
+            if token!=prompt_token[0]:return
+            prompt_active[0]=False;prompt_after[0]=None
+            prompt_canvas.delete('all');prompt_canvas.pack_forget()
+        prompt_after[0]=root.after(300000,stop_scroll)
     root.bind('<Button-1>',lambda event:show_star_prompt(),add='+')
     def button(parent,text,command,blue=False):
         b=RoundedButton(parent,text=text,command=command,bg='#2d6acb' if blue else '#2b2b2b',font=(FONT_FAMILY,10),padx=10)
