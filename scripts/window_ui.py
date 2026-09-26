@@ -23,13 +23,24 @@ class RoundedButton(tk.Button):
                          bg=parent.cget('bg'),activebackground=parent.cget('bg'),
                          activeforeground=fg,relief='flat',bd=0,highlightthickness=0,
                          highlightbackground=parent.cget('bg'),
-                         padx=0,pady=0,cursor='hand2',compound='center',takefocus=True)
-        self.bind('<ButtonPress-1>',lambda e:self.winfo_toplevel().focus_set())
+                         padx=0,pady=0,cursor='hand2',compound='center',takefocus=False)
+        self.bind('<ButtonPress-1>',self._mouse_press)
+        self.bind('<ButtonRelease-1>',self._mouse_release)
         self.bind('<Enter>',lambda e:self.redraw(True))
         self.bind('<Leave>',lambda e:self.redraw())
         self.bind('<FocusIn>',lambda e:self.redraw())
         self.bind('<FocusOut>',lambda e:self.redraw())
         self.redraw()
+
+    def _mouse_press(self, event):
+        self.winfo_toplevel().focus_set()
+        return 'break'
+
+    def _mouse_release(self, event):
+        if 0 <= event.x < self.winfo_width() and 0 <= event.y < self.winfo_height():
+            self.invoke()
+        self.winfo_toplevel().focus_set()
+        return 'break'
 
     def redraw(self,hover=False):
         font=tkfont.Font(font=self.cget('font'))

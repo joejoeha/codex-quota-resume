@@ -12,6 +12,30 @@ from PIL import Image, ImageGrab, ImageTk
 from window_ui import rounded_window, bind_drag, window_controls, RoundedButton, place_beside
 from window_ui import FONT_FAMILY
 
+def apply_theme(root, light):
+    bg='#f5f5f5' if light else '#181818'; panel='#e5e7eb' if light else '#2b2b2b'
+    fg='#202124' if light else '#eeeeee'
+    def walk(widget):
+        if isinstance(widget,tk.Text): widget.configure(bg=panel,fg=fg,insertbackground=fg)
+        elif isinstance(widget,tk.Listbox): widget.configure(bg=panel,fg=fg)
+        elif isinstance(widget,tk.Label): widget.configure(bg=panel if widget.winfo_name()=='placeholder' else bg,fg=fg)
+        elif isinstance(widget,(tk.Frame,tk.Canvas)): widget.configure(bg=bg)
+        if isinstance(widget,tk.Canvas):
+            try: widget.itemconfigure('surface',fill=panel)
+            except tk.TclError: pass
+        if isinstance(widget,RoundedButton): widget.fill=panel;widget.configure(fg=fg,activeforeground=fg);widget.redraw()
+        for child in widget.winfo_children(): walk(child)
+    walk(root)
+    for canvas in root.winfo_children():
+        if isinstance(canvas,tk.Canvas):
+            try: canvas.itemconfigure('surface',fill=panel)
+            except tk.TclError: pass
+    root.window_canvas.configure(bg='#010203' if not light else '#f5f5f5')
+    root.window_canvas.itemconfigure(root.window_shape,fill=bg)
+    expanded=getattr(root,'expanded_window',None)
+    if expanded is not None and expanded.winfo_exists() and hasattr(expanded,'apply_theme'):
+        expanded.apply_theme(light)
+
 
 def show(thread, path, write_plan, on_ready=None, parent=None, task_name=None, on_saved=None):
     if parent is None and sys.platform != 'darwin':ctypes.windll.shcore.SetProcessDpiAwareness(1)
@@ -20,6 +44,7 @@ def show(thread, path, write_plan, on_ready=None, parent=None, task_name=None, o
     attachments = list(old.get('images', [])) if saved else []
     files = list(old.get('files', [])) if saved else []
     root = tk.Toplevel(parent) if parent is not None else tk.Tk()
+    root.apply_theme=lambda light: apply_theme(root, light)
     root.is_task_composer = True
     if parent is not None:root.withdraw()
     timers=[]
@@ -132,7 +157,7 @@ def show(thread, path, write_plan, on_ready=None, parent=None, task_name=None, o
         input_area.delete('surface')
         input_area.create_polygon(r,0,w-r,0,w,0,w,r,w,h-r,w,h,w-r,h,
                                   r,h,0,h,0,h-r,0,r,0,0,smooth=True,
-                                  fill='#2b2b2b',outline='',tags='surface')
+                                  fill=editor.cget('bg'),outline='',tags='surface')
         editor.place(x=12,y=12,width=max(1,w-24),height=max(1,h-76))
         actions.place(x=max(0,w-12),y=max(0,h-10),anchor='se')
         expand_host.place(x=max(0,w-24-actions.winfo_reqwidth()),y=max(0,h-14),anchor='se')
@@ -230,6 +255,8 @@ def show(thread, path, write_plan, on_ready=None, parent=None, task_name=None, o
         if expanded[0] is not None:
             expanded[0].deiconify();expanded[0].lift();return
         window=tk.Toplevel(root)
+        window.apply_theme=lambda light: apply_theme(window, light)
+        root.expanded_window=window
         window.title((task_title if sys.platform=='win32' else caption)+' — 编辑后续需求')
         panel=rounded_window(window,760,620)
         header=tk.Frame(panel,bg='#181818');header.pack(fill='x',pady=(0,12))
@@ -254,6 +281,7 @@ def show(thread, path, write_plan, on_ready=None, parent=None, task_name=None, o
             large.bind('<Command-v>',paste)
             window.bind('<Command-Return>',lambda e:collapse_editor())
         large.focus_set()
+        window.apply_theme(getattr(root,'theme_light',False))
     expand_host=tk.Frame(input_area,bg='#2b2b2b')
     expand_button=RoundedButton(expand_host,text='↗',command=expand_editor,font=font,padx=5,pady=1)
     expand_button.pack()

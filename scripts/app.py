@@ -41,11 +41,15 @@ def theme_icon(light):
         mask.ellipse((24,24,156,156),fill=255);mask.ellipse((66,18,174,126),fill=0)
         ImageDraw.Draw(image).ellipse((24,24,156,156),fill=yellow);image.putalpha(alpha)
     else:
-        draw.ellipse((57,57,123,123),fill=yellow)
-        for x1,y1,x2,y2 in ((84,5,84,42),(84,126,84,175),(5,84,42,84),(126,84,175,84),
-                             (22,22,48,48),(120,120,146,146),(120,48,146,22),(22,146,48,120)):
-            draw.line((x1,y1,x2,y2),fill=yellow,width=12)
-    return image.resize((30,30),Image.Resampling.LANCZOS)
+        draw.ellipse((55,55,125,125),fill=yellow)
+        for x1,y1,x2,y2 in ((90,10,90,36),(90,144,90,170),(10,90,36,90),(144,90,170,90),
+                             (24,24,44,44),(136,136,156,156),(136,44,156,24),(24,156,44,136)):
+            draw.line((x1,y1,x2,y2),fill=yellow,width=14)
+            r=7
+            draw.ellipse((x1-r,y1-r,x1+r,y1+r),fill=yellow)
+            draw.ellipse((x2-r,y2-r,x2+r,y2+r),fill=yellow)
+    icon_size=38 if light else 30
+    return image.resize((icon_size,icon_size),Image.Resampling.LANCZOS)
 
 
 def run_command(command):
@@ -207,8 +211,10 @@ def show():
                                 bg=None,fg='#888888',font=(FONT_FAMILY,9),padx=10,pady=5)
     update_button.pack_forget()
     theme_light=[False]
+    root.theme_light=False
     def toggle_theme():
         theme_light[0]=not theme_light[0]
+        root.theme_light=theme_light[0]
         background='#f5f5f5' if theme_light[0] else '#181818'
         foreground='#202124' if theme_light[0] else '#eeeeee'
         button_fill='#e5e7eb' if theme_light[0] else '#2b2b2b'
@@ -219,18 +225,22 @@ def show():
                 button_text=('#ffffff' if widget is enable_button else
                              '#f7c948' if widget is appearance_button else
                              '#202124') if theme_light[0] else foreground
-                widget.fill=button_fill;widget.configure(fg=button_text,activeforeground=button_text);widget.redraw()
+                widget.fill=None if widget is appearance_button else button_fill
+                widget.configure(fg=button_text,activeforeground=button_text);widget.redraw()
             for child in widget.winfo_children():apply(child)
         apply(frame)
         root.window_canvas.configure(bg='#010203' if sys.platform!='darwin' else 'systemTransparent')
         root.window_canvas.itemconfigure(root.window_shape,fill=background,outline='#d0d5dd' if theme_light[0] else '#383838')
         root.window_body.configure(bg=background)
         appearance_button.prefix_icon=theme_icon(theme_light[0]);appearance_button.redraw()
+        for dialog in open_plans.values():
+            if hasattr(dialog,'apply_theme'):dialog.apply_theme(theme_light[0])
     appearance_button=RoundedButton(footer,text='',fg='#f7c948',prefix_icon=theme_icon(False),command=toggle_theme,
                                      font=(FONT_FAMILY,12),padx=6,pady=3)
+    appearance_button.fill=None
+    appearance_button.redraw()
     appearance_button.configure(takefocus=False)
     appearance_button.pack(side='left')
-    appearance_button.bind('<ButtonRelease-1>',lambda event:root.focus_set(),add='+')
     star_count=[None]
     def show_star_state():
         text='\u2003\u2003Star'
@@ -324,6 +334,7 @@ def show():
             return
         task_name=(threads[index].get('name') or threads[index].get('preview') or '当前任务').replace('\n',' ')
         dialog=w.plan_dialog(thread,parent=root,task_name=task_name,on_saved=saved_feedback)
+        if hasattr(dialog,'apply_theme'):dialog.apply_theme(theme_light[0])
         open_plans[thread]=dialog
         def closed(event):
             if event.widget!=dialog:return
