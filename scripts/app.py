@@ -33,6 +33,21 @@ TASK_NAMES=('Codex Quota Resume Watcher','Codex Quota Resume Backup')
 STAR_PROMPT_TEXT='如果 Codex 自动续跑帮到了你，请在 GitHub 点个 Star，这对我们意义重大 👉'
 
 
+def theme_icon(light):
+    size=180;image=Image.new('RGBA',(size,size),(0,0,0,0));draw=ImageDraw.Draw(image)
+    yellow='#f7c948'
+    if light:
+        alpha=Image.new('L',(size,size),0);mask=ImageDraw.Draw(alpha)
+        mask.ellipse((24,24,156,156),fill=255);mask.ellipse((66,18,174,126),fill=0)
+        ImageDraw.Draw(image).ellipse((24,24,156,156),fill=yellow);image.putalpha(alpha)
+    else:
+        draw.ellipse((57,57,123,123),fill=yellow)
+        for x1,y1,x2,y2 in ((84,5,84,42),(84,126,84,175),(5,84,42,84),(126,84,175,84),
+                             (22,22,48,48),(120,120,146,146),(120,48,146,22),(22,146,48,120)):
+            draw.line((x1,y1,x2,y2),fill=yellow,width=12)
+    return image.resize((30,30),Image.Resampling.LANCZOS)
+
+
 def run_command(command):
     result = subprocess.run(command,
                             capture_output=True,text=True,encoding='utf-8',errors='replace',
@@ -207,9 +222,9 @@ def show():
         root.window_canvas.configure(bg='#010203' if sys.platform!='darwin' else 'systemTransparent')
         root.window_canvas.itemconfigure(root.window_shape,fill=background,outline='#d0d5dd' if theme_light[0] else '#383838')
         root.window_body.configure(bg=background)
-        appearance_button.configure(text='☾' if theme_light[0] else '☀',fg='#f7c948',activeforeground='#f7c948')
-    appearance_button=RoundedButton(footer,text='☀',fg='#f7c948',command=toggle_theme,
-                                     font=(FONT_FAMILY,12),padx=8,pady=3)
+        appearance_button.prefix_icon=theme_icon(theme_light[0]);appearance_button.redraw()
+    appearance_button=RoundedButton(footer,text='',fg='#f7c948',prefix_icon=theme_icon(False),command=toggle_theme,
+                                     font=(FONT_FAMILY,12),padx=6,pady=3)
     appearance_button.pack(side='left')
     star_count=[None]
     def show_star_state():
