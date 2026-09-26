@@ -5,6 +5,9 @@ from unittest.mock import patch
 import github_star as gh
 import quota_watcher as w
 
+with patch.dict(gh.os.environ, {'CODEX_QUOTA_GITHUB_CLIENT_ID': ''}):
+    assert gh.client_id() == gh.DEFAULT_CLIENT_ID
+
 with patch.object(gh, 'request', return_value=(200, b'{"stargazers_count": 7}')):
     assert gh.star_count() == 7
 with patch.object(gh, 'request', return_value=(403, b'')):

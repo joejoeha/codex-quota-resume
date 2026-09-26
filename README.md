@@ -160,14 +160,14 @@ MIT 许可。这是独立社区项目，非 OpenAI 官方产品。完整英文�
 
 ## GitHub Star 集成（维护者配置）
 
-桌面程序的“关于”窗口可查看公开 Star 数并自愿给项目点 Star。未配置 GitHub App 时，按钮只打开项目页供用户手动操作，不会假装已 Star。已由 GitHub API 确认的 Star 会记录在现有 `state.json`，不保存 GitHub token、密码或浏览器 Cookie；提醒最多每 7 天出现一次，验证后停止。网络不可用时不影响监控。
+桌面程序的“关于”窗口可查看公开 Star 数并自愿给项目点 Star。项目已配置公开 GitHub App Client ID；如果授权失败，按钮会打开项目页供用户手动操作，不会假装已 Star。已由 GitHub API 确认的 Star 会记录在现有 `state.json`，不保存 GitHub token、密码或浏览器 Cookie；提醒最多每 7 天出现一次，验证后停止。网络不可用时不影响监控。
 
 发布者需要在 GitHub **Settings → Developer settings → GitHub Apps → New GitHub App** 创建应用：
 
 1. Homepage URL：`https://github.com/joejoeha/codex-quota-resume`。
-2. User permissions：**Starring: Read and write**。Repository permissions：**Metadata: Read**（默认权限）。无需其他权限。
-3. 启用 **Device Flow**。本实现无需 Callback URL；GitHub App 表单如要求填写，可填项目主页 URL，程序不会使用该地址。
-4. 取 GitHub App **Client ID**（不是 App ID），构建前设置 `CODEX_QUOTA_GITHUB_CLIENT_ID`。例如 PowerShell：`$env:CODEX_QUOTA_GITHUB_CLIENT_ID='你的 Client ID'; & .\scripts\build_windows.ps1`。构建脚本仅将公开 Client ID 放入 EXE，不包含 Client Secret。
+2. User permissions：**Starring: Read and write**。Repository permissions：**Metadata: Read-only**。无需其他权限。
+3. 启用 **Device Flow**，关闭 Webhook。本实现无需 Callback URL，表单可留空。
+4. 仓库内已包含项目的公开 Client ID `Iv23linApcpGO7QHccqh`，普通用户无需配置。维护者若替换 GitHub App，可在构建前设置 `CODEX_QUOTA_GITHUB_CLIENT_ID` 覆盖默认值。例如 PowerShell：`$env:CODEX_QUOTA_GITHUB_CLIENT_ID='新的 Client ID'; & .\scripts\build_windows.ps1`。构建脚本不会包含 Client Secret。
 
 本地源码测试可临时设置同一环境变量并运行 `python -X utf8 scripts/test_github_star.py`、`python -X utf8 scripts/app.py`。实际授权测试需要在 GitHub App 后台启用 Device Flow，然后在“关于”点击 Star，复制程序给出的代码到 GitHub 授权页。程序只在本次操作期间持有 access token；下次需要重新授权才能重新检查，已验证的本地状态仍会保留。
 

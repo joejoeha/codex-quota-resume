@@ -9,6 +9,7 @@ import urllib.request
 from pathlib import Path
 
 REPO_URL = 'https://github.com/joejoeha/codex-quota-resume'
+DEFAULT_CLIENT_ID = 'Iv23linApcpGO7QHccqh'  # Public GitHub App identifier, not a secret.
 API_URL = 'https://api.github.com'
 STAR_PATH = '/user/starred/joejoeha/codex-quota-resume'
 HEADERS = {'Accept': 'application/vnd.github+json',
@@ -20,8 +21,10 @@ SEVEN_DAYS = 7 * 24 * 60 * 60
 def client_id():
     embedded = Path(getattr(sys, '_MEIPASS', Path(__file__).parent)) / 'github-client-id.txt'
     if embedded.exists():
-        return embedded.read_text(encoding='utf-8-sig').strip()
-    return os.environ.get('CODEX_QUOTA_GITHUB_CLIENT_ID', '').strip()
+        value = embedded.read_text(encoding='utf-8-sig').strip()
+        if value:
+            return value
+    return os.environ.get('CODEX_QUOTA_GITHUB_CLIENT_ID', '').strip() or DEFAULT_CLIENT_ID
 
 
 def request(url, *, method='GET', token=None, form=None):
