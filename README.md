@@ -1,10 +1,10 @@
 # Codex Quota Resume · Codex 额度恢复自动续跑
 
 [简体中文](README.md) | [English](README.en.md)
-<picture>
-  <source media="(prefers-color-scheme: light)" srcset="assets/software-windows-light-transparent.png">
-  <img alt="Codex 自动续跑软件界面" src="assets/software-windows-transparent.png">
-</picture>
+| 浅色界面 | 深色界面 |
+| --- | --- |
+| ![浅色界面](assets/software-windows-light-transparent.png) | ![深色界面](assets/software-windows-transparent.png) |
+
 **Windows Beta / macOS Developer Preview（开发预览）**。macOS 移植和监控配置兼容性修复已合入 `main`，请从主分支继续开发。macOS 尚未完成目标设备及真实额度恢复验收。
 
 [桌面版下载 / Downloads](https://github.com/JOEJOEHA/codex-quota-resume/releases/latest) · [参与贡献 / Contributing](CONTRIBUTING.md) · [给朋友的 Codex 交接 Prompt / macOS Handoff](docs/macos-handoff.md) · [macOS 构建与验收](docs/macos.md)
