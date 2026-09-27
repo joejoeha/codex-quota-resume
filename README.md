@@ -2,7 +2,7 @@
 
 [简体中文](README.md) | [English](README.en.md)
 
-![浅色界面](assets/software-windows-light-transparent.png) | ![深色界面](assets/software-windows-transparent.png) 
+![浅色界面](assets/software-windows-light-transparent.png)  ![深色界面](assets/software-windows-transparent.png) 
 
 **Windows Beta / macOS Developer Preview（开发预览）**。macOS 移植和监控配置兼容性修复已合入 `main`，请从主分支继续开发。macOS 尚未完成目标设备及真实额度恢复验收。
 
