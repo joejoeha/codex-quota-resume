@@ -1,7 +1,7 @@
 # Codex Quota Resume · Codex 额度恢复自动续跑
 
 [简体中文](README.md) | [English](README.en.md)
-| 浅色界面 | 深色界面 |
+
 | --- | --- |
 | ![浅色界面](assets/software-windows-light-transparent.png) | ![深色界面](assets/software-windows-transparent.png) |
 
