@@ -45,6 +45,13 @@ script=base64.b64decode(commands[0][-1]).decode('utf-16le')
 assert 'Set-ScheduledTask' in script
 assert all(x not in script for x in ('Stop-ScheduledTask','Enable-ScheduledTask','Start-ScheduledTask','paused.flag'))
 with tempfile.TemporaryDirectory() as folder:
+    root=Path(folder);versions=root/'versions'
+    for tag in ('v3.0.0-beta.42','v3.0.0-beta.44','v3.0.0-beta.45'):
+        path=versions/tag/u.ASSET;path.parent.mkdir(parents=True);path.write_bytes(b'exe')
+    u.prune_versions(root,versions/'v3.0.0-beta.44'/u.ASSET)
+    assert not (versions/'v3.0.0-beta.42').exists()
+    assert (versions/'v3.0.0-beta.44').exists() and (versions/'v3.0.0-beta.45').exists()
+with tempfile.TemporaryDirectory() as folder:
     atom=f'<feed xmlns="http://www.w3.org/2005/Atom"><entry><link href="https://github.com/{u.REPO}/releases/tag/v3.0.0-beta.16"/></entry></feed>'.encode()
     def limited(url,method='GET'):
         if 'api.github.com' in url:raise u.urllib.error.HTTPError(url,403,'rate limit',{},None)

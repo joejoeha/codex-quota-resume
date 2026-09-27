@@ -6,6 +6,7 @@ import os
 import platform
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import tempfile
 import time
@@ -14,7 +15,7 @@ import urllib.error
 import urllib.parse
 from xml.etree import ElementTree as ET
 
-VERSION = '3.0.0-beta.43'
+VERSION = '3.0.0-beta.44'
 REPO = 'joejoeha/codex-quota-resume'
 ASSET = 'CodexQuotaResume.exe'
 
@@ -140,6 +141,26 @@ def windows_release(current=VERSION):
 def check_windows_update(current=VERSION):
     """Check release metadata without downloading or installing anything."""
     return windows_release(current) is not None
+
+
+def prune_versions(directory, executable):
+    """Remove superseded installed versions; retry locked files on next launch."""
+    versions = Path(directory).resolve() / 'versions'
+    executable = Path(executable).resolve()
+    if executable.name != ASSET or executable.parent.parent != versions:
+        return
+    current = version(executable.parent.name)
+    if current is None:
+        return
+    for folder in versions.iterdir():
+        if folder.is_symlink() or not folder.is_dir():
+            continue
+        older = version(folder.name)
+        if older is not None and older < current:
+            try:
+                shutil.rmtree(folder)
+            except OSError:
+                pass  # A running old EXE is locked on Windows; try again next launch.
 
 
 def update(directory, progress=lambda text: None, current=VERSION):

@@ -512,7 +512,9 @@ def main():
         w.plan_dialog(args.plan,args.plan_key)
     elif args.monitor:
         w.run_once(backup=args.backup)
-    else:show()
+    else:
+        updater.prune_versions(w.APP_DIR, sys.executable)
+        show()
 
 
 if __name__=='__main__':
