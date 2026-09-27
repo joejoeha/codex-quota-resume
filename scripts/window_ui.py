@@ -65,6 +65,9 @@ class RoundedButton(tk.Button):
         self.surface=ImageTk.PhotoImage(surface,master=self)
         super().configure(image=self.surface)
 
+    def set_surface_background(self,color):
+        super().configure(bg=color,activebackground=color,highlightbackground=color)
+
     def configure(self,cnf=None,**kwargs):
         if cnf is not None:return super().configure(cnf,**kwargs)
         if 'bg' in kwargs:self.fill=kwargs.pop('bg')

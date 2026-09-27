@@ -13,25 +13,37 @@ from window_ui import rounded_window, bind_drag, window_controls, RoundedButton,
 from window_ui import FONT_FAMILY
 
 def apply_theme(root, light):
+    root.theme_light=light
     bg='#f5f5f5' if light else '#181818'; panel='#e5e7eb' if light else '#2b2b2b'
     fg='#202124' if light else '#eeeeee'
+    backgrounds={'#181818':bg,'#f5f5f5':bg}
+    panels={'#2b2b2b':panel,'#e5e7eb':panel,'#242424':panel}
     def walk(widget):
         if isinstance(widget,tk.Text): widget.configure(bg=panel,fg=fg,insertbackground=fg)
         elif isinstance(widget,tk.Listbox): widget.configure(bg=panel,fg=fg)
         elif isinstance(widget,tk.Label): widget.configure(bg=panel if widget.winfo_name()=='placeholder' else bg,fg=fg)
-        elif isinstance(widget,(tk.Frame,tk.Canvas)): widget.configure(bg=bg)
+        elif isinstance(widget,(tk.Frame,tk.Canvas)):
+            old=widget.cget('bg')
+            color=('#010203' if sys.platform!='darwin' else 'systemTransparent') if widget is getattr(root,'window_canvas',None) else panels.get(old,backgrounds.get(old,bg))
+            widget.configure(bg=color)
         if isinstance(widget,tk.Canvas):
             try: widget.itemconfigure('surface',fill=panel)
             except tk.TclError: pass
-        if isinstance(widget,RoundedButton): widget.fill=panel;widget.configure(fg=fg,activeforeground=fg);widget.redraw()
+            try: widget.itemconfigure('menu-surface',fill=panel)
+            except tk.TclError: pass
+        if isinstance(widget,RoundedButton):
+            widget.set_surface_background(widget.master.cget('bg'))
+            widget.fill=panel
+            widget.configure(fg=fg,activeforeground=fg)
         for child in widget.winfo_children(): walk(child)
     walk(root)
     for canvas in root.winfo_children():
         if isinstance(canvas,tk.Canvas):
             try: canvas.itemconfigure('surface',fill=panel)
             except tk.TclError: pass
-    root.window_canvas.configure(bg='#010203' if not light else '#f5f5f5')
-    root.window_canvas.itemconfigure(root.window_shape,fill=bg)
+    root.window_canvas.configure(bg='#010203' if sys.platform!='darwin' else 'systemTransparent')
+    root.window_canvas.itemconfigure(root.window_shape,fill=bg,
+                                     outline='#d0d5dd' if light else '#383838')
     expanded=getattr(root,'expanded_window',None)
     if expanded is not None and expanded.winfo_exists() and hasattr(expanded,'apply_theme'):
         expanded.apply_theme(light)
@@ -266,10 +278,22 @@ def show(thread, path, write_plan, on_ready=None, parent=None, task_name=None, o
             heading=label(header,'编辑后续需求',size=16);heading.pack(side='left')
             window_controls(window,header,font,on_close=collapse_editor)
             bind_drag(window,header,heading)
-        label(panel,caption,size=11).pack(fill='x',pady=(0,6))
-        large=tk.Text(panel,bg='#2b2b2b',fg='#f3f3f3',insertbackground='white',
+        editor_area=tk.Canvas(panel,bg='#181818',highlightthickness=0)
+        editor_area.pack(fill='both',expand=True)
+        large=tk.Text(editor_area,bg='#2b2b2b',fg='#f3f3f3',insertbackground='white',
                       relief='flat',highlightthickness=0,wrap='word',font=font,undo=True,padx=14,pady=14)
-        large.pack(fill='both',expand=True)
+        editor_area.create_window(12,12,anchor='nw',window=large,tags='editor')
+        def resize_large(event):
+            width,height=event.width,event.height
+            radius=24
+            editor_area.delete('surface')
+            editor_area.create_polygon(radius,0,width-radius,0,width,0,width,radius,
+                                       width,height-radius,width,height,width-radius,height,
+                                       radius,height,0,height,0,height-radius,0,radius,0,0,
+                                       smooth=True,fill=large.cget('bg'),outline='',tags='surface')
+            editor_area.tag_raise('editor')
+            editor_area.itemconfigure('editor',width=max(1,width-24),height=max(1,height-24))
+        editor_area.bind('<Configure>',resize_large)
         large.insert('1.0',editor.get('1.0','end-1c'))
         expanded[:]=[window,large]
         editor.configure(state='disabled')
@@ -313,7 +337,7 @@ def show(thread, path, write_plan, on_ready=None, parent=None, task_name=None, o
     menu=tk.Canvas(body,width=160,height=110,bg='#242424',highlightthickness=0)
     menu.create_polygon(20,1,140,1,159,1,159,20,159,90,159,109,140,109,
                         20,109,1,109,1,90,1,20,1,1,smooth=True,
-                        fill='#242424',outline='#242424')
+                        fill='#242424',outline='#242424',tags='menu-surface')
     menu_body=tk.Frame(menu,bg='#242424')
     menu.create_window(8,8,anchor='nw',width=144,height=94,window=menu_body)
     def hide_menu():

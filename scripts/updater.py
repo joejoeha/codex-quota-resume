@@ -14,7 +14,7 @@ import urllib.error
 import urllib.parse
 from xml.etree import ElementTree as ET
 
-VERSION = '3.0.0-beta.42'
+VERSION = '3.0.0-beta.43'
 REPO = 'joejoeha/codex-quota-resume'
 ASSET = 'CodexQuotaResume.exe'
 
