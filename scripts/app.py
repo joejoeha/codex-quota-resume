@@ -258,7 +258,7 @@ def show():
     star_points=[(10,1),(12,7),(19,7),(14,11),(16,19),
                  (10,14),(4,19),(6,11),(1,7),(8,7)]
     ImageDraw.Draw(star_icon).polygon([(x*6,y*6) for x,y in star_points],fill='#f7c948')
-    star_icon=star_icon.resize((20,20),Image.Resampling.LANCZOS)
+    star_icon=star_icon.resize((30,30),Image.Resampling.LANCZOS)
     star_button=RoundedButton(footer,text='\u2003\u2003Star',fg='#f7c948',prefix_icon=star_icon,
                               command=open_star_page,
                               font=(FONT_FAMILY,9,'bold'),padx=8,pady=5)
