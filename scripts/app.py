@@ -222,6 +222,9 @@ def show():
             if isinstance(widget,tk.Label):widget.configure(bg=background,fg=foreground)
             elif isinstance(widget,(tk.Frame,tk.Canvas)):widget.configure(bg=background)
             if isinstance(widget,RoundedButton):
+                if widget is enable_button:
+                    for child in widget.winfo_children():apply(child)
+                    return
                 button_text=('#ffffff' if widget is enable_button else
                              '#f7c948' if widget is appearance_button else
                              '#202124') if theme_light[0] else foreground
