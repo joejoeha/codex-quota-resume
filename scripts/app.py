@@ -179,7 +179,7 @@ def show():
     detail=label('', '#aaaaaa',10)
     note=label('首次使用请点击“启用 / 更新监控”。关闭此窗口后，计划任务仍会运行。','#aaaaaa',10)
     actions=tk.Frame(frame,bg='#181818');actions.pack(fill='x',pady=(2,18))
-    results=queue.Queue();busy=[False];threads=[]
+    results=queue.Queue();busy=[False];threads=[];manual_update_check=[False]
     def background(job):
         if busy[0]:return
         busy[0]=True;note.configure(text='处理中…')
@@ -192,6 +192,7 @@ def show():
         background(install)
     def check_update():
         if busy[0]:return
+        manual_update_check[0]=True
         update_button.configure(text='检查中…')
         if sys.platform=='darwin':background(updater.check_macos_update)
         else:background(lambda:updater.update(w.APP_DIR,lambda text:results.put(('update-progress',text))))
@@ -399,8 +400,9 @@ def show():
             elif kind=='update-progress':
                 note.configure(text=value)
             elif kind=='update-available':
-                update_available[0]=value
-                if not busy[0]:show_update_state()
+                if not manual_update_check[0]:
+                    update_available[0]=value
+                    if not busy[0]:show_update_state()
             elif kind=='star-count':
                 star_count[0]=value
                 show_star_state()
