@@ -25,9 +25,9 @@
 
 ## 下载本地软件（推荐）
 
-[下载 Windows EXE（v3.0.0-beta.39）](https://github.com/joejoeha/codex-quota-resume/releases/download/v3.0.0-beta.39/CodexQuotaResume.exe) · [Windows 发布说明](https://github.com/joejoeha/codex-quota-resume/releases/latest) · [macOS 预览版下载](https://github.com/joejoeha/codex-quota-resume/releases/tag/v3.0.0-beta.36)
+[下载 Windows EXE（v3.0.0-beta.46）](https://github.com/joejoeha/codex-quota-resume/releases/download/v3.0.0-beta.46/CodexQuotaResume.exe) · [Windows 发布说明](https://github.com/joejoeha/codex-quota-resume/releases/latest) · [macOS 预览版下载](https://github.com/joejoeha/codex-quota-resume/releases/tag/v3.0.0-beta.36)
 
-beta.39 仅更新 Windows：移除灰色输入区域内重复显示的任务标题；顶部窗口标题、长标题省略和展开编辑窗口标题保持不变。
+beta.46 仅更新 Windows：从安装包中移除未使用的 NumPy 和 OpenBLAS，减少启动时的解压量；界面和监控逻辑保持不变。
 
 M1 / M2 / M3 等 Apple Silicon 芯片选择 `macOS-arm64-preview.zip`；Intel Mac 选择 `macOS-x86_64-preview.zip`。两种架构均已通过 CI 构建，不代表每种芯片或目标设备都已实机验收。macOS 预览仅有 ad-hoc 签名，尚无 Developer ID 签名与 Apple 公证。
 
