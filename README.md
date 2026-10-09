@@ -25,9 +25,9 @@
 
 ## 下载本地软件（推荐）
 
-[下载 Windows EXE（v3.0.0-beta.46）](https://github.com/joejoeha/codex-quota-resume/releases/download/v3.0.0-beta.46/CodexQuotaResume.exe) · [Windows 发布说明](https://github.com/joejoeha/codex-quota-resume/releases/latest) · [macOS 预览版下载](https://github.com/joejoeha/codex-quota-resume/releases/tag/v3.0.0-beta.36)
+[下载 Windows EXE（v3.0.0-beta.47）](https://github.com/joejoeha/codex-quota-resume/releases/download/v3.0.0-beta.47/CodexQuotaResume.exe) · [Windows 发布说明](https://github.com/joejoeha/codex-quota-resume/releases/latest) · [macOS 预览版下载](https://github.com/joejoeha/codex-quota-resume/releases/tag/v3.0.0-beta.36)
 
-beta.46 仅更新 Windows：从安装包中移除未使用的 NumPy 和 OpenBLAS，减少启动时的解压量；界面和监控逻辑保持不变。
+beta.47（Windows）：启动后及运行期间每小时后台检查并静默下载新版，校验完成后显示“有新版本·点击更新”。点击即可使用本地下载切换，新窗口启动和安装切换成功后自动清理旧版本。
 
 M1 / M2 / M3 等 Apple Silicon 芯片选择 `macOS-arm64-preview.zip`；Intel Mac 选择 `macOS-x86_64-preview.zip`。两种架构均已通过 CI 构建，不代表每种芯片或目标设备都已实机验收。macOS 预览仅有 ad-hoc 签名，尚无 Developer ID 签名与 Apple 公证。
 
@@ -150,7 +150,7 @@ MIT 许可。这是独立社区项目，非 OpenAI 官方产品。完整英文�
 
 ### 应用内更新（Windows）
 
-主窗口左下角的按钮平时显示当前版本号；启动后会在后台查询 GitHub Releases，发现可安装的 Windows 新版时变蓝并显示“检查更新”。点击后下载更新、验证 SHA256 并自动安装。右下角的 Star 按钮可自愿为项目点星。安装成功后打开新版；旧窗口中的草稿仍可继续保存。任务、附件、监控启用/暂停状态保留。macOS 开发预览支持手动检查新版、查看发布说明并打开下载页，安装仍需手动完成。
+Windows 主界面运行时（包括隐藏到托盘）启动后及每小时检查 GitHub Releases，静默下载新版并验证 SHA256，完成后左下角显示“有新版本·点击更新”。下载失败只记录日志并在下次检查重试，不弹窗打扰；下载好的文件在重启后仍可复用。点击更新直接使用本地文件，无需重新联网下载；新版窗口启动成功后才切换快捷方式和监控入口。每 30 秒尝试清理旧版本，仍被运行中的旧窗口占用的程序会等窗口关闭后再删除；草稿、附件和监控启用/暂停状态保留。完全退出软件后不再后台下载。macOS 仍使用原有手动更新流程。
 
 ### 额度中断自动输入窗
 

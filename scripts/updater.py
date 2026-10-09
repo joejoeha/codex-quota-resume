@@ -13,9 +13,11 @@ import time
 import urllib.request
 import urllib.error
 import urllib.parse
+import uuid
+from contextlib import contextmanager
 from xml.etree import ElementTree as ET
 
-VERSION = '3.0.0-beta.46'
+VERSION = '3.0.0-beta.47'
 REPO = 'joejoeha/codex-quota-resume'
 ASSET = 'CodexQuotaResume.exe'
 
@@ -163,11 +165,12 @@ def prune_versions(directory, executable):
                 pass  # A running old EXE is locked on Windows; try again next launch.
 
 
-def update(directory, progress=lambda text: None, current=VERSION):
+@contextmanager
+def update_lock(directory):
     if os.name != 'nt':
         raise RuntimeError('macOS 开发预览暂不支持自动安装，请从 GitHub Releases 下载。')
     import msvcrt
-    directory = Path(directory)
+    directory = Path(directory).resolve()
     directory.mkdir(parents=True, exist_ok=True)
     with (directory / 'update.lock').open('a+b') as lock:
         lock.seek(0)
@@ -175,10 +178,31 @@ def update(directory, progress=lambda text: None, current=VERSION):
             msvcrt.locking(lock.fileno(), msvcrt.LK_NBLCK, 1)
         except OSError:
             raise RuntimeError('另一个窗口正在更新，请稍后重试。')
+        yield directory
+
+
+def ready_update(directory, current=VERSION):
+    """Read a completed download, validating it again before offering installation."""
+    directory = Path(directory).resolve()
+    try:
+        data = json.loads((directory / 'update-ready.json').read_text(encoding='utf-8'))
+        tag, expected = data['version'], data['sha256']
+        if not version(tag) or version(tag) <= version(current):return None
+        destination = directory / 'versions' / tag / ASSET
+        if destination.resolve().parent.parent != directory / 'versions':return None
+        if hashlib.sha256(destination.read_bytes()).hexdigest() != expected:return None
+        return {'version': tag, 'sha256': expected}
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
+def prepare_update(directory, progress=lambda text: None, current=VERSION):
+    """Download and verify only; never activate or launch the downloaded program."""
+    with update_lock(directory) as directory:
         progress('正在检查 GitHub 新版本…')
         release = windows_release(current)
         if not release:
-            return {'updated': False, 'version': current}
+            return None
         tag = release['tag_name']
         with fetch(asset_url(release, 'SHA256SUMS.txt')) as response:
             sums = response.read().decode('utf-8-sig')
@@ -187,6 +211,10 @@ def update(directory, progress=lambda text: None, current=VERSION):
             raise RuntimeError('发布版本缺少有效 SHA256 校验值。')
         expected = matches[0].lower()
         destination = directory / 'versions' / tag / ASSET
+        if destination.resolve().parent.parent != directory / 'versions':
+            raise RuntimeError('更新目录无效。')
+        cached = ready_update(directory, current)
+        if cached and cached == {'version': tag, 'sha256': expected}:return cached
         destination.parent.mkdir(parents=True, exist_ok=True)
         progress('正在下载 ' + tag + '…')
         with tempfile.NamedTemporaryFile(dir=destination.parent, suffix='.download', delete=False) as output:
@@ -204,18 +232,47 @@ def update(directory, progress=lambda text: None, current=VERSION):
         try:
             if digest.hexdigest() != expected:
                 raise RuntimeError('下载校验失败，未安装；请重新点击更新。')
-            if destination.exists():
-                if hashlib.sha256(destination.read_bytes()).hexdigest() != expected:
-                    raise RuntimeError('本地同版本文件不一致，未覆盖正在使用的程序。')
-            else:
+            if not destination.exists() or hashlib.sha256(destination.read_bytes()).hexdigest() != expected:
                 temporary.replace(destination)
         finally:
             temporary.unlink(missing_ok=True)
-        progress('校验通过，正在安装 ' + tag + '…')
+        data = {'version': tag, 'sha256': expected}
+        manifest = directory / 'update-ready.tmp'
+        manifest.write_text(json.dumps(data), encoding='utf-8')
+        manifest.replace(directory / 'update-ready.json')
+        return data
+
+
+def install_ready(directory, progress=lambda text: None, current=VERSION):
+    """Switch to the verified local download without another network request."""
+    with update_lock(directory) as directory:
+        ready = ready_update(directory, current)
+        if not ready:raise RuntimeError('下载文件已失效，请重新检查更新。')
+        tag = ready['version']
+        destination = directory / 'versions' / tag / ASSET
+        progress('正在切换到 ' + tag + '…')
         environment = dict(os.environ, PYINSTALLER_RESET_ENVIRONMENT='1')
+        token = uuid.uuid4().hex
+        acknowledgement = destination.parent / ('.' + token + '.ready')
+        activated = destination.parent / ('.' + token + '.activated')
+        launch = subprocess.Popen([str(destination), '--update-ready', token], env=environment)
+        deadline = time.monotonic() + 60
+        while not acknowledgement.exists():
+            if launch.poll() is not None or time.monotonic() >= deadline:
+                raise RuntimeError('新版窗口未能启动，旧版和下载文件已保留，可重试。')
+            time.sleep(.1)
         result = subprocess.run([str(destination), '--apply-update'], env=environment,
                                 creationflags=subprocess.CREATE_NO_WINDOW, timeout=180)
         if result.returncode:
             raise RuntimeError('安装切换失败，旧窗口已保留，请查看运行记录。')
-        subprocess.Popen([str(destination)], env=environment)
+        activated.touch()
+        acknowledgement.unlink(missing_ok=True)
+        (directory / 'update-ready.json').unlink(missing_ok=True)
         return {'updated': True, 'version': tag}
+
+
+def update(directory, progress=lambda text: None, current=VERSION):
+    """Keep the existing manual/CLI entry point working with the staged installer."""
+    if not ready_update(directory, current) and not prepare_update(directory, progress, current):
+        return {'updated': False, 'version': current}
+    return install_ready(directory, progress, current)

@@ -5,6 +5,7 @@ import json
 import os
 import sys
 import tempfile
+import threading
 import time
 import tkinter as tk
 import uuid
@@ -28,18 +29,28 @@ def button(widget,text):
     return next(w for w in walk(widget) if isinstance(w,tk.Button) and w.cget('text')==text)
 original=tk.Tk.mainloop
 errors=[]
+download_allowed=threading.Event()
+def prepared(*args):
+    download_allowed.wait()
+    return {'version':'v3.0.0-beta.99'}
 def loop(root,*args,**kwargs):
     root.report_callback_exception=lambda kind,error,tb:errors.append(error)
     def check():
         try:
-            update_button=button(root,'检查更新')
+            assert not button(root,'检查更新').winfo_viewable(), 'Do not advertise an unfinished download'
+            installer.assert_not_called()
+            download_allowed.set()
+            deadline=time.monotonic()+10
+            while not any(isinstance(w,tk.Button) and w.cget('text')=='有新版本·点击更新' for w in walk(root)) and time.monotonic()<deadline:
+                root.update();time.sleep(.02)
+            update_button=button(root,'有新版本·点击更新')
             star_button=button(root,'\u2003\u2003Star')
             assert star_button.winfo_viewable()
             if update_button.winfo_viewable():assert update_button.fill=='#2d6acb'
             update_button.configure(bg=None,text='检查更新')
             assert update_button.fill is None and update_button.cget('text')=='检查更新'
             assert star_button.cget('fg')=='#f7c948'
-            assert star_button.prefix_icon.size==(20,20)
+            assert star_button.prefix_icon.size==(30,30)
             assert any(star_button.prefix_icon.getchannel('A').histogram()[1:255])
             assert star_button.winfo_width()<=80
             assert update_button.winfo_rootx()<star_button.winfo_rootx()
@@ -164,8 +175,11 @@ def loop(root,*args,**kwargs):
             assert root.state()=='withdrawn' and dialog.winfo_exists()
             assert root.tray.active and root.state()=='withdrawn'
             root.tray.restore();root.update()
-            root.tray.broadcast(2)
-            root.after(300,lambda:ready.set(True));root.wait_variable(ready)
+            button(root,'有新版本·点击更新').invoke()
+            deadline=time.monotonic()+10
+            while root.state()!='withdrawn' and time.monotonic()<deadline:
+                root.update();time.sleep(.02)
+            installer.assert_called_once()
             assert root.state()=='withdrawn' and dialog.winfo_exists()
             assert draft.get('1.0','end-1c')=='Keep draft on tray exit'
             with patch.object(plan_dialog.messagebox,'askyesnocancel',return_value=False):
@@ -173,6 +187,8 @@ def loop(root,*args,**kwargs):
             assert root.tray.closed and not root.tray.active
             print(f'INPROCESS_OK: {elapsed*1000:.0f} ms, same PID, task name, fixed width, expanded editor, 8 images, saved/sent flag, close/save')
         except Exception as error:
+            import traceback
+            traceback.print_exc()
             errors.append(error)
             try:root.destroy()
             except tk.TclError:pass
@@ -180,6 +196,6 @@ def loop(root,*args,**kwargs):
     return original(root,*args,**kwargs)
 with tempfile.TemporaryDirectory() as directory:
     folder=Path(directory);source=folder/'sample.txt';source.write_text('local file',encoding='utf-8')
-    with patch.object(tray,'GROUP','CodexQuotaResume.Test.'+uuid.uuid4().hex),patch.object(app.w,'latest_candidate',return_value={'threadId':thread,'key':'test-quota','quotaError':True}),patch.object(app.w,'APP_DIR',folder),patch.object(app.w,'load_state',return_value={}),patch.object(app.w,'find_codex',return_value='codex'),patch.object(app.w.codex_status,'connection',connection),patch.object(app,'monitor_indicator',return_value=('', '', True)),patch.object(app.updater,'check_windows_update',return_value=True),patch.object(app.github_star,'star_count',return_value=None),patch.object(app.subprocess,'Popen') as launch,patch.object(tk.Tk,'mainloop',loop):
+    with patch.object(tray,'GROUP','CodexQuotaResume.Test.'+uuid.uuid4().hex),patch.object(app.w,'latest_candidate',return_value={'threadId':thread,'key':'test-quota','quotaError':True}),patch.object(app.w,'APP_DIR',folder),patch.object(app.w,'load_state',return_value={}),patch.object(app.w,'find_codex',return_value='codex'),patch.object(app.w.codex_status,'connection',connection),patch.object(app,'monitor_indicator',return_value=('', '', True)),patch.object(app.updater,'prepare_update',side_effect=prepared),patch.object(app.updater,'install_ready',return_value={'updated':True,'version':'v3.0.0-beta.99'}) as installer,patch.object(app.github_star,'star_count',return_value=None),patch.object(app.subprocess,'Popen') as launch,patch.object(tk.Tk,'mainloop',loop):
         app.show()
 assert not errors,errors

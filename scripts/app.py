@@ -137,7 +137,7 @@ def install():
     return '已启用主备监控，并创建桌面快捷方式。'
 
 
-def show():
+def show(update_token=None):
     if os.name == 'nt':ctypes.windll.shcore.SetProcessDpiAwareness(1)
     root=tk.Tk()
     root.title('Codex Quota Resume')
@@ -179,7 +179,8 @@ def show():
     detail=label('', '#aaaaaa',10)
     note=label('首次使用请点击“启用 / 更新监控”。关闭此窗口后，计划任务仍会运行。','#aaaaaa',10)
     actions=tk.Frame(frame,bg='#181818');actions.pack(fill='x',pady=(2,18))
-    results=queue.Queue();busy=[False];threads=[];manual_update_check=[False]
+    results=queue.Queue();busy=[False];threads=[]
+    updating=[False]
     def background(job):
         if busy[0]:return
         busy[0]=True;note.configure(text='处理中…')
@@ -192,10 +193,10 @@ def show():
         background(install)
     def check_update():
         if busy[0]:return
-        manual_update_check[0]=True
-        update_button.configure(text='检查中…')
+        updating[0]=True
+        update_button.configure(text='更新中…')
         if sys.platform=='darwin':background(updater.check_macos_update)
-        else:background(lambda:updater.update(w.APP_DIR,lambda text:results.put(('update-progress',text))))
+        else:background(lambda:updater.install_ready(w.APP_DIR,lambda text:results.put(('update-progress',text))))
     update_available=[False]
     def show_update_state():
         if update_available[0]:
@@ -204,7 +205,7 @@ def show():
         else:
             update_button.pack_forget()
             appearance_button.pack(side='left')
-        update_button.configure(text='检查更新',
+        update_button.configure(text='有新版本·点击更新' if sys.platform=='win32' and update_available[0] else '检查更新',
                                 bg='#2d6acb' if update_available[0] else None,
                                 fg='#eeeeee' if update_available[0] else '#888888',
                                 activeforeground='#eeeeee' if update_available[0] else '#888888')
@@ -385,7 +386,7 @@ def show():
         try:
             kind,value=results.get_nowait()
             if kind=='quota-popup':
-                claim=w.claim_popup(value)
+                claim=None if exiting[0] else w.claim_popup(value)
                 if claim:
                     try:
                         root.deiconify()
@@ -402,14 +403,15 @@ def show():
             elif kind=='update-progress':
                 note.configure(text=value)
             elif kind=='update-available':
-                if not manual_update_check[0]:
-                    update_available[0]=value
+                if not updating[0]:
+                    update_available[0]=bool(value)
                     if not busy[0]:show_update_state()
             elif kind=='star-count':
                 star_count[0]=value
                 show_star_state()
             elif isinstance(value,dict) and value.get('macosUpdate'):
                 busy[0]=False
+                updating[0]=False
                 update_available[0]=value['available']
                 show_update_state()
                 if value['available']:
@@ -428,6 +430,7 @@ def show():
                                          if value.get('limited') else '未发现更新的发布版本。'))
             elif isinstance(value,dict) and 'updated' in value:
                 busy[0]=False
+                updating[0]=False
                 update_available[0]=False
                 show_update_state()
                 note.configure(text=('已安装 '+value['version'] if value['updated'] else '当前已是最新版本。'))
@@ -435,8 +438,9 @@ def show():
                     exit_interface()
                     if not open_plans:return
             elif kind=='error':
-                show_update_state()
                 busy[0]=False
+                updating[0]=False
+                show_update_state()
                 note.configure(text='操作失败，详情已显示');messagebox.showerror('操作失败',value,parent=root)
             elif isinstance(value,list):
                 busy[0]=False
@@ -449,6 +453,7 @@ def show():
                 note.configure(text=value.strip() or '操作完成。')
                 threading.Thread(target=lambda:results.put(('monitor',monitor_indicator())),daemon=True).start()
         except queue.Empty:pass
+        if not busy[0]:show_update_state()
         root.after(1000,tick)
     popup_since=time.time()
     def refresh_monitor():
@@ -461,11 +466,19 @@ def show():
             except (OSError,ValueError):pass
             results.put(('monitor',monitor_indicator()))
             time.sleep(5)
+    stopped=threading.Event()
+    root.bind('<Destroy>',lambda event:stopped.set() if event.widget==root else None,add='+')
     tick();load_threads()
     if sys.platform=='win32':
         def check_available():
-            try:results.put(('update-available',updater.check_windows_update()))
+            try:
+                cached=updater.ready_update(w.APP_DIR)
+                if cached:results.put(('update-available',cached))
             except Exception:pass
+            while not stopped.is_set():
+                try:results.put(('update-available',updater.prepare_update(w.APP_DIR)))
+                except Exception as error:w.log(f'Background update check: {error}')
+                if stopped.wait(3600):break
         threading.Thread(target=check_available,daemon=True).start()
     def load_star_count():
         try:results.put(('star-count',github_star.star_count()))
@@ -474,6 +487,15 @@ def show():
     threading.Thread(target=refresh_monitor,daemon=True).start()
     root.lift()
     root.tray=TrayIcon(root,exit_interface)
+    if sys.platform=='win32' and getattr(sys,'frozen',False):
+        marker=Path(sys.executable).parent/('.'+update_token+'.activated') if update_token else None
+        def cleanup_versions():
+            if marker is None or marker.exists():
+                updater.prune_versions(w.APP_DIR,sys.executable)
+            root.after(30000,cleanup_versions)
+        root.after(30000,cleanup_versions)
+        if update_token:
+            root.after_idle(lambda:(Path(sys.executable).parent/('.'+update_token+'.ready')).touch())
     root.mainloop()
 
 
@@ -487,7 +509,10 @@ def main():
     parser.add_argument('--install',action='store_true')
     parser.add_argument('--doctor',action='store_true')
     parser.add_argument('--apply-update',action='store_true')
+    parser.add_argument('--update-ready')
     args=parser.parse_args()
+    if args.update_ready and (len(args.update_ready)!=32 or any(c not in '0123456789abcdef' for c in args.update_ready)):
+        parser.error('Invalid update token')
     if args.doctor:
         try:
             if sys.platform != 'darwin':
@@ -513,8 +538,7 @@ def main():
     elif args.monitor:
         w.run_once(backup=args.backup)
     else:
-        updater.prune_versions(w.APP_DIR, sys.executable)
-        show()
+        show(update_token=args.update_ready)
 
 
 if __name__=='__main__':

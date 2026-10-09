@@ -5,7 +5,7 @@ import io
 import json
 from pathlib import Path
 import tempfile
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 import updater as u
 
 assert u.version('v3.0.0-beta.16') > u.version('v3.0.0-beta.15')
@@ -19,6 +19,9 @@ def fetch(url):
     if '/api.' in url:return io.BytesIO(json.dumps([release]).encode())
     if url.endswith('SHA256SUMS.txt'):return io.BytesIO((hashlib.sha256(payload).hexdigest()+'  '+u.ASSET).encode())
     return io.BytesIO(payload)
+def started(command, **kwargs):
+    (Path(command[0]).parent / ('.' + command[2] + '.ready')).touch()
+    return Mock(poll=lambda:None)
 with tempfile.TemporaryDirectory() as folder, patch.object(u,'fetch',side_effect=fetch), patch.object(u.subprocess,'run') as run, patch.object(u.subprocess,'Popen') as launch:
     run.return_value.returncode=0
     root=Path(folder);(root/'paused.flag').touch();(root/'plan.json').write_text('draft')
@@ -27,7 +30,15 @@ with tempfile.TemporaryDirectory() as folder, patch.object(u,'fetch',side_effect
     assert not run.called and not launch.called
     assert not u.update(root,current='3.0.0-beta.16')['updated']
     assert not run.called
-    assert u.update(root,current='3.0.0-beta.15')['updated']
+    launch.side_effect=started
+    assert u.prepare_update(root,current='3.0.0-beta.15')['version']==release['tag_name']
+    assert not run.called and not launch.called, 'Silent download must not install or launch'
+    assert u.ready_update(root,current='3.0.0-beta.15')
+    # Repeated checks reuse the verified download; the click works completely offline.
+    with patch.object(u,'fetch',side_effect=lambda url: (_ for _ in ()).throw(AssertionError('Redownload')) if url.endswith('.exe') else fetch(url)):
+        assert u.prepare_update(root,current='3.0.0-beta.15')
+    with patch.object(u,'fetch',side_effect=AssertionError('Network on install click')):
+        assert u.install_ready(root,current='3.0.0-beta.15')['updated']
     assert run.call_args.args[0][-1]=='--apply-update' and launch.called
     assert (root/'paused.flag').exists() and (root/'plan.json').read_text()=='draft'
     run.reset_mock();launch.reset_mock()
@@ -39,6 +50,28 @@ with tempfile.TemporaryDirectory() as folder, patch.object(u,'fetch',side_effect
         else:raise AssertionError('Corrupted download accepted')
     assert not run.called and not launch.called
     assert not list(root.rglob('*.download'))
+    assert not (root/'update-ready.json').exists()
+    u.prepare_update(root,current='3.0.0-beta.15')
+    target=root/'versions'/release['tag_name']/u.ASSET
+    target.write_bytes(b'tampered')
+    assert not u.ready_update(root,current='3.0.0-beta.15')
+    try:u.install_ready(root,current='3.0.0-beta.15')
+    except RuntimeError:pass
+    else:raise AssertionError('Tampered cache installed')
+    assert not launch.called
+    u.prepare_update(root,current='3.0.0-beta.15')
+    assert target.read_bytes()==payload
+    launch.side_effect=lambda *a,**k:Mock(poll=lambda:1)
+    try:u.install_ready(root,current='3.0.0-beta.15')
+    except RuntimeError as error:assert '未能启动' in str(error)
+    else:raise AssertionError('Failed startup activated')
+    assert not run.called and u.ready_update(root,current='3.0.0-beta.15')
+    launch.side_effect=started;run.return_value.returncode=1
+    try:u.install_ready(root,current='3.0.0-beta.15')
+    except RuntimeError as error:assert '切换失败' in str(error)
+    else:raise AssertionError('Activation failure ignored')
+    assert u.ready_update(root,current='3.0.0-beta.15')
+    assert (root/'paused.flag').exists() and (root/'plan.json').read_text()=='draft'
 commands=[]
 u.activate('example.exe',commands.append)
 script=base64.b64decode(commands[0][-1]).decode('utf-16le')

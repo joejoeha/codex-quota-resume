@@ -10,7 +10,7 @@ A local desktop utility that resumes unfinished Codex tasks interrupted by expli
 
 | Platform | Release asset | Status |
 |---|---|---|
-| Windows 10 / 11 | `CodexQuotaResume.exe` | v3.0.0-beta.39; includes Python, Tkinter and Pillow |
+| Windows 10 / 11 | `CodexQuotaResume.exe` | v3.0.0-beta.47; includes Python, Tkinter and Pillow |
 | Apple Silicon: M1 / M2 / M3 and other M-series Macs | `CodexQuotaResume-macOS-arm64-preview.zip` | Development preview |
 | Intel Mac | `CodexQuotaResume-macOS-x86_64-preview.zip` | Development preview |
 
@@ -22,7 +22,7 @@ See [macOS development](docs/macos.md) for source setup, building and local vali
 
 ## Behavior
 
-The v3.0.0-beta.39 release updates Windows only: remove the duplicate task title from the gray input area while keeping the window header, long-title truncation and expanded-editor title. Download the unchanged macOS previews from [v3.0.0-beta.36](https://github.com/joejoeha/codex-quota-resume/releases/tag/v3.0.0-beta.36).
+The v3.0.0-beta.47 release updates Windows only: silently download and verify updates in the background, offer one-click switching only when ready, and clean up old versions after successful activation. Download the unchanged macOS previews from [v3.0.0-beta.36](https://github.com/joejoeha/codex-quota-resume/releases/tag/v3.0.0-beta.36).
 
 - The primary watcher checks every 60 seconds; an independent backup checks every 300 seconds. Both share a process lock and send records.
 - Only explicit quota interruptions of unfinished work qualify. Zero remaining quota alone, normal completion and ordinary network errors do not trigger resumption. Live quota is checked before sending.
@@ -102,7 +102,7 @@ Multiple composers are tiled in opening order on the same side of the main windo
 
 ### In-app updates (Windows)
 
-The bottom-left button normally shows the current version. After a background release check, it turns blue and says “检查更新” when a newer Windows build is available. Click it to download the release, verify SHA256 and install it. The bottom-right Star button lets you support the project. The new app opens after installation; existing draft windows remain available for saving. Saved tasks, attachments and monitor enabled/paused state are preserved. macOS developer previews can check manually and still require manual download.
+Windows beta.47 checks on startup and hourly while the UI is running, including in the tray. It silently downloads and verifies newer Windows releases, then shows “有新版本·点击更新” only when the download is ready. Background errors are logged and retried on the next check. Verified downloads survive restarts; clicking installs from the local cache without another network request. Shortcuts and monitor actions switch only after the new window starts. Old versions are cleaned every 30 seconds; locked programs are retried after their windows close, preserving drafts, attachments and monitor enabled/paused state. Downloads stop when the application exits completely. macOS retains its existing manual update flow.
 
 ### Automatic composer on quota interruption
 
